@@ -1,0 +1,28 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "de3f1c14aca996f5f7f6af71cc606a16"
+application_url = "https://savannah-suit-benjamin-plates.trycloudflare.com"
+embedded = true
+name = "Poppy"
+handle = "poppy-3"
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_metaobjects,write_metaobject_definitions,write_metaobjects,write_products,write_files,write_themes"
+
+[auth]
+redirect_urls = [
+  "https://savannah-suit-benjamin-plates.trycloudflare.com/auth/callback",
+  "https://savannah-suit-benjamin-plates.trycloudflare.com/auth/shopify/callback",
+  "https://savannah-suit-benjamin-plates.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
