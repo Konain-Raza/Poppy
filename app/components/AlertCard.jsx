@@ -70,7 +70,9 @@ export default function AlertCard({ onDelete, alert }) {
                       ? "On Visit"
                       : showPosition === "checkout"
                         ? "Checkout"
-                        : showPosition}
+                        : showPosition === "tabClose"
+                          ? "Leave"
+                          : showPosition}
                 </Badge>
                 {scheduleStatus === "enable" && (
                   <Badge tone="success" progress="complete">

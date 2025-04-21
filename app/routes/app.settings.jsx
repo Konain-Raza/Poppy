@@ -447,9 +447,10 @@ function AlertPopupSettingsPage() {
               <Select
                 label="Trigger Event"
                 options={[
-                  { label: "On Product Visit", value: "onVisit" },
-                  { label: "Checkout", value: "checkout" },
-                  { label: "Add to Cart", value: "addToCart" },
+                  { label: "When Visiting the Page", value: "onVisit" },
+                  { label: "When at Checkout", value: "checkout" },
+                  { label: "When Adding to Cart", value: "addToCart" },
+                  { label: "When Closing Tab", value: "tabClose" }
                 ]}
                 value={showPosition}
                 disabled={isSaving}
