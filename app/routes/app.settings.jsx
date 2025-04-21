@@ -447,7 +447,7 @@ function AlertPopupSettingsPage() {
               <Select
                 label="Trigger Event"
                 options={[
-                  { label: "On Website Visit", value: "onVisit" },
+                  { label: "On Product Visit", value: "onVisit" },
                   { label: "Checkout", value: "checkout" },
                   { label: "Add to Cart", value: "addToCart" },
                 ]}

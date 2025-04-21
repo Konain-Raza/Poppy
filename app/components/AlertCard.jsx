@@ -11,9 +11,7 @@ import {
   Box,
 } from "@shopify/polaris";
 import { useNavigate } from "@remix-run/react";
-import {
-  EditIcon,DeleteIcon
-} from '@shopify/polaris-icons';
+import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
 export default function AlertCard({ onDelete, alert }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
@@ -51,52 +49,69 @@ export default function AlertCard({ onDelete, alert }) {
 
   return (
     <>
-   <Box paddingBlockEnd="400">
-   <Card
-        roundedAbove="sm"
-        padding="400"
-      >
-        <BlockStack gap="200">
-          <InlineStack align="space-between">
-            <Text
-              as="h2"
-              variant="headingMd"
-              fontWeight="bold"
-            >
-              {title}
-            </Text>
-            <InlineStack gap="100">
-              <Badge tone={alertStatus === "enable" ? "success" : "critical"} progress="complete">
-                {alertStatus}
-              </Badge>
-             {scheduleStatus === "enable" &&  <Badge tone="success" progress="complete">
-                {scheduleStatus}
-              </Badge>}
+      <Box paddingBlockEnd="400">
+        <Card roundedAbove="sm" padding="400">
+          <BlockStack gap="200">
+            <InlineStack align="space-between">
+              <Text as="h2" variant="headingMd" fontWeight="bold">
+                {title}
+              </Text>
+              <InlineStack gap="100">
+                <Badge
+                  tone={alertStatus === "enable" ? "success" : "critical"}
+                  progress="complete"
+                >
+                  {alertStatus === "enable" ? "Active" : "Inactive"}
+                </Badge>
+                <Badge tone="info" progress="complete">
+                  {showPosition === "beforeAddToCart"
+                    ? "Add to Cart"
+                    : showPosition === "onVisit"
+                      ? "On Visit"
+                      : showPosition === "checkout"
+                        ? "Checkout"
+                        : showPosition}
+                </Badge>
+                {scheduleStatus === "enable" && (
+                  <Badge tone="success" progress="complete">
+                    Scheduled
+                  </Badge>
+                )}
+                {countryRestriction === "enable" && (
+                  <Badge tone="warning" progress="complete">
+                    Country Locked
+                  </Badge>
+                )}
+                {userOnly === "enable" && (
+                  <Badge tone="info" progress="complete">
+                    User-Only Access
+                  </Badge>
+                )}
+              </InlineStack>
             </InlineStack>
-          </InlineStack>
 
-          <Text as="p">{description}</Text>
+            <Text as="p">{description}</Text>
 
-          {/* Actions */}
-          <InlineStack align="end">
-            <ButtonGroup>
-              <Button
-                variant="secondary"
-                tone="critical"
-                icon={DeleteIcon}
-                onClick={openModal}
-                style={{ backgroundColor: "#f44336", color: "#fff" }}
-              >
-                Delete
-              </Button>
-              <Button variant="primary" icon={EditIcon} onClick={handleEdit}>
-                Edit
-              </Button>
-            </ButtonGroup>
-          </InlineStack>
-        </BlockStack>
-      </Card>
-   </Box>
+            {/* Actions */}
+            <InlineStack align="end">
+              <ButtonGroup>
+                <Button
+                  variant="secondary"
+                  tone="critical"
+                  icon={DeleteIcon}
+                  onClick={openModal}
+                  style={{ backgroundColor: "#f44336", color: "#fff" }}
+                >
+                  Delete
+                </Button>
+                <Button variant="primary" icon={EditIcon} onClick={handleEdit}>
+                  Edit
+                </Button>
+              </ButtonGroup>
+            </InlineStack>
+          </BlockStack>
+        </Card>
+      </Box>
 
       {/* 🧾 Delete Confirmation Modal */}
       <Modal

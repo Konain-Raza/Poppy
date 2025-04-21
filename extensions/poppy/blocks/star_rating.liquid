@@ -1,0 +1,218 @@
+<div id="shopifyAlertModal" class="modal-overlay">
+  <div class="alert-modal-content">
+    <button id="closeModalBtn" class="close-btn">&times;</button>
+    <h2 id="alertTitle"></h2>
+    <p id="alertDescription"></p>
+    <label for="dontShowAgain">
+      <input type="checkbox" id="dontShowAgain" /> Don't show this again
+    </label>
+    <div class="alert-modal-actions">
+      <button id="alertSecondaryBtn" class="secondary-btn">Cancel</button>
+      <button id="alertPrimaryBtn" class="primary-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root {
+    --title-text-color: {{ block.settings.title_text_color }};
+    --description-text-color: {{ block.settings.description_text_color }};
+    --primary-button-color: {{ block.settings.primary_button_color }};
+    --secondary-button-color: {{ block.settings.secondary_button_color }};
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    handleShopifyAlertModal();
+  });
+
+  function handleShopifyAlertModal() {
+    console.log("Poppy is Running in page ");
+    document.getElementById('closeModalBtn').addEventListener('click', function() {
+    document.getElementById('shopifyAlertModal').style.display = 'none';
+});
+
+    const currentProductId = "gid://shopify/Product/{{ product.id }}";
+    const currentUser = "{{ customer }}";
+    const country =" {{localization.country.iso_code}}";
+    let matchingMetaobject, selectedProducts, metaobjectData;
+
+    // Find matching metaobject
+    {% for metaobject in metaobjects['alertium-by-konain-bhai'].values %}
+       selectedProducts = {{ metaobject.selectedProducts }};
+       metaobjectData = {{ metaobject | json }};
+
+      if (selectedProducts.includes(currentProductId) && metaobjectData.alertStatus === "enable") {
+        matchingMetaobject = metaobjectData;
+      }
+    {% endfor %}
+    if (sessionStorage.getItem('poppyAlertDismissed') === 'true') {
+      console.debug("Alert already dismissed, skipping modal.");
+      return;
+    }
+
+    if (!matchingMetaobject) {
+      console.debug("No matching metaobject found for this product.");
+      return;
+    }
+
+    // Check if the alertStatus is enabled and userOnly is disabled or if the current customer matches
+    if (matchingMetaobject.alertStatus !== "enable") {
+      console.debug("Alert is not enabled.");
+      return;
+    }
+
+    if (matchingMetaobject.countryRestriction === "enable" && !matchingMetaobject.selectedCountries.includes(country)) {
+  console.debug("User's country is not allowed. Skipping...");
+  return; // Exit the function if the country is not allowed
+}
+
+    // Check if userOnly is enabled and customer is not logged in
+    if (matchingMetaobject.userOnly === "enable" && !currentUser) {
+      console.debug("Alert is for registered users only, and no customer is logged in.");
+      return;
+    }
+
+    // Schedule date check (if scheduleStatus is enabled)
+    if (matchingMetaobject.scheduleStatus === "enable") {
+      const currentDate = new Date();
+      const startDate = new Date(matchingMetaobject.startDate);
+      const endDate = new Date(matchingMetaobject.endDate);
+
+      if (currentDate < startDate || currentDate > endDate) {
+        console.debug("Current date is outside the schedule date range.");
+        return;
+      }
+    }
+    console.debug("🟡 Matching Metaobject Found:", matchingMetaobject);
+
+    const modal = document.getElementById('shopifyAlertModal');
+    const primaryBtn = document.getElementById('alertPrimaryBtn');
+    const secondaryBtn = document.getElementById('alertSecondaryBtn');
+    const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+
+    // Set modal content
+    document.getElementById('alertTitle').textContent = matchingMetaobject.title || "Notice";
+    document.getElementById('alertDescription').textContent = matchingMetaobject.description || "";
+    primaryBtn.textContent = matchingMetaobject.primaryText || "OK";
+    secondaryBtn.textContent = matchingMetaobject.secondaryText || "Cancel";
+
+    let interceptedAction = null;
+
+    primaryBtn.onclick = () => {
+      if (dontShowAgainCheckbox.checked) {
+        sessionStorage.setItem('poppyAlertDismissed', 'true');
+      }
+      modal.style.display = "none";
+
+      if (interceptedAction === "addToCart") {
+        const form = document.querySelector('form[action^="/cart/add"]');
+        if (form) {
+          console.debug("Submitting Add to Cart form.");
+          form.submit();
+        }
+      } else if (interceptedAction === "checkout") {
+        const checkoutForm = document.querySelector('.shopify-payment-button__button');
+        if (checkoutForm) {
+          console.debug("Submitting Checkout form.");
+          // checkoutForm.click();
+          window.location.href = "/checkout"
+        }
+      }
+    };
+
+    secondaryBtn.onclick = () => {
+      modal.style.display = "none";
+      if(showPosition==="onVisit"){
+        window.location.href = "/";
+      }
+      console.debug("Modal dismissed.");
+    };
+
+    const showPosition = matchingMetaobject.showPosition;
+    if (showPosition === "onVisit") {
+      modal.style.display = "flex"; // Show the modal on page load
+      console.debug("Modal displayed on website visit.");
+    }
+    // 🛒 Intercept Add to Cart
+    if (showPosition === "beforeAddToCart") {
+      const addBtn = document.querySelector('[name="add"]');
+      if (addBtn) {
+        const clonedAddBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(clonedAddBtn, addBtn);
+        clonedAddBtn.addEventListener('click', function (event) {
+          event.preventDefault();
+          interceptedAction = "addToCart";
+          console.debug("Intercepted Add to Cart click.");
+          modal.style.display = "flex";
+        });
+      }
+    }
+
+    // 💳 Intercept Checkout
+    if (showPosition === "checkout") {
+      const checkoutSelectors = [
+        'button[name="checkout"]',
+        'input[name="checkout"]',
+        'button[name="direct_checkout"]',
+        'button[data-shopify-buy-now-button]',
+        '.shopify-payment-button__button'
+      ];
+
+      checkoutSelectors.forEach(selector => {
+        const checkoutBtn = document.querySelector(selector);
+        if (checkoutBtn) {
+          const clonedCheckoutBtn = checkoutBtn.cloneNode(true);
+          checkoutBtn.parentNode.replaceChild(clonedCheckoutBtn, checkoutBtn);
+          clonedCheckoutBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            interceptedAction = "checkout";
+            console.debug(`Intercepted Checkout click on: ${selector}`);
+            modal.style.display = "flex";
+          });
+        }
+      });
+    }
+  }
+</script>
+
+
+
+
+{% schema %}
+{
+  "name": "Poppy",
+  "target": "body",
+  "stylesheet": "styles.css",
+  
+  "settings": [
+    {
+      "type": "color",
+      "id": "title_text_color",
+      "label": "Title Text Color",
+      "default": "#007acc"
+    },
+    {
+      "type": "color",
+      "id": "description_text_color",
+      "label": "Description Text Color",
+      "default": "#555555"
+    },
+    {
+      "type": "color",
+      "id": "primary_button_color",
+      "label": "Primary Button Color",
+      "default": "#007acc"
+    },
+    {
+      "type": "color",
+      "id": "secondary_button_color",
+      "label": "Secondary Button Color",
+      "default": "#e0e0e0"
+    }
+  ]
+}
+{% endschema %}
+

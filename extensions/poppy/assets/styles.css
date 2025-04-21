@@ -1,0 +1,119 @@
+/* Modal Overlay */
+#shopifyAlertModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+/* Modal Animation */
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Modal Content */
+.alert-modal-content {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    padding: 2.5rem;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transform: scale(0.8);
+    animation: scaleIn 0.4s ease forwards;
+    position: relative; /* For positioning the close button */
+}
+
+/* Modal Title */
+.alert-modal-content h2 {
+    margin-top: 0;
+    font-size: 26px;
+    color: var(--title-text-color);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
+
+/* Modal Description */
+.alert-modal-content p {
+    color: var(--description-text-color);
+    font-size: 16px;
+    margin: 15px 0 25px;
+    line-height: 1.5;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Button Container */
+.alert-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Buttons Shared Styles */
+.alert-modal-actions button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Primary Button */
+.primary-btn {
+    background-color: var(--primary-button-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+/* Secondary Button */
+.secondary-btn {
+    background-color: var(--secondary-button-color);
+    color: #374151; /* Optional override if needed */
+    border: 1px solid #d1d5db;
+}
+
+.secondary-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+/* Close Button */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #ff0000; /* Red color for hover effect */
+    transform: scale(1.2); /* Slight zoom effect on hover */
+}
