@@ -1,106 +1,86 @@
 export async function getStagedUploadTarget(admin, file) {
-    try {
-      console.log("🟢 Starting staged upload request for file:", file);
-  
-      // Step 1: Create staged upload target
-      const response = await admin.graphql(
-        `#graphql
-        mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
-          stagedUploadsCreate(input: $input) {
-            stagedTargets {
-              url
-              resourceUrl
-              parameters {
-                name
-                value
-              }
-            }
-            userErrors {
-              field
-              message
+  try {
+    console.log("🟢 Starting staged upload request for file:", file);
+
+    // Step 1: Create staged upload target
+    const response = await admin.graphql(
+      `#graphql
+      mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+        stagedUploadsCreate(input: $input) {
+          stagedTargets {
+            url
+            resourceUrl
+            parameters {
+              name
+              value
             }
           }
-        }`,
-        {
-          variables: {
-            input: [
-              {
-                filename: file.filename,
-                mimeType: file.mimeType,
-                resource: "IMAGE",
-                httpMethod: "POST",
-                fileSize: file.fileSize?.toString(),
-              },
-            ],
-          },
-        }
-      );
-  
-      const json = await response.json();
-      console.log("🟢 Raw response from stagedUploadsCreate:", JSON.stringify(json, null, 2));
-  
-      const target = json?.data?.stagedUploadsCreate?.stagedTargets?.[0];
-      const errors = json?.data?.stagedUploadsCreate?.userErrors;
-  
-      if (!target) {
-        console.error("🔴 Staged upload failed:", errors);
-        throw new Error(errors?.[0]?.message || "Failed to create staged upload target.");
-      }
-  
-      console.log("✅ Staged upload target generated successfully.");
-  
-      // Step 2: Now, use the resourceUrl returned from the staged upload in the fileCreate mutation
-      const createFileRes = await admin.graphql(
-        `#graphql
-        mutation fileCreate($files: [FileCreateInput!]!) {
-          fileCreate(files: $files) {
-            files {
-              id
-              fileStatus
-              alt
-              createdAt
-            }
-            userErrors {
-              field
-              message
-            }
+          userErrors {
+            field
+            message
           }
-        }`,
-        {
-          variables: {
-            files: [
-              {
-                alt: file.filename || "Uploaded image",
-                contentType: "IMAGE",
-                filename:file.filename, 
-                originalSource: target.resourceUrl,
-              },
-            ],
-          },
         }
-      );
-  
-      const createFileJson = await createFileRes.json();
-      console.log("📎 fileCreate response:", JSON.stringify(createFileJson, null, 2));
-  
-      const createdFile = createFileJson?.data?.fileCreate?.files?.[0];
-      const fileCreateErrors = createFileJson?.data?.fileCreate?.userErrors;
-  
-      if (!createdFile) {
-        console.error("⚠️ File creation failed:", fileCreateErrors);
-        throw new Error(fileCreateErrors?.[0]?.message || "Failed to create file in Shopify.");
+      }`,
+      {
+        variables: {
+          input: [
+            {
+              filename: file.filename,
+              mimeType: file.mimeType,
+              resource: "IMAGE", // For image upload
+              httpMethod: "POST", // POST for file upload
+              fileSize: file.fileSize?.toString(),
+            },
+          ],
+        },
       }
-  
-      console.log("✅ File successfully created in Shopify and available on CDN.");
-  
-      return {
-        id: createdFile.id,
-        resourceUrl: target.resourceUrl,
-        fileStatus: createdFile.fileStatus,
-      };
-    } catch (error) {
-      console.error("🔥 Error in staged upload process:", error);
-      throw new Error("Error while uploading and creating file. " + error.message);
+    );
+
+    const json = await response.json();
+    console.log("🟢 Raw response from stagedUploadsCreate:", JSON.stringify(json, null, 2));
+
+    const target = json?.data?.stagedUploadsCreate?.stagedTargets?.[0];
+    const errors = json?.data?.stagedUploadsCreate?.userErrors;
+
+    if (!target) {
+      console.error("🔴 Staged upload failed:", errors);
+      throw new Error(errors?.[0]?.message || "Failed to create staged upload target.");
     }
+
+    console.log("✅ Staged upload target generated successfully.");
+
+    // Step 2: Upload the file to the generated URL
+    const uploadUrl = target.url;
+    const formData = new FormData();
+
+    // Include the parameters from the staged upload in the form data
+    target.parameters.forEach(param => {
+      formData.append(param.name, param.value);
+    });
+
+    // Attach the file to the request
+    formData.append("file", file); // Assuming 'file' is a File object (e.g., from a file input)
+
+    // Upload file to Shopify using the generated URL
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "POST",
+      body: formData,
+    });
+console.log(uploadUrl)
+    if (!uploadResponse.ok) {
+      throw new Error("File upload to Shopify failed.");
+    }
+
+    console.log("✅ File uploaded successfully to Shopify.");
+
+    // Return the resource URL from the response
+    return {
+      resourceUrl: target.resourceUrl, // This URL can be used in your store
+      message: "Upload and storage successful",
+    };
+
+  } catch (error) {
+    console.error("🔥 Error in staged upload process:", error);
+    throw new Error("Error while uploading and creating file. " + error.message);
   }
-  
+}

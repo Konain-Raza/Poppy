@@ -64,7 +64,7 @@ export default function AlertCard({ onDelete, alert }) {
                   {alertStatus === "enable" ? "Active" : "Inactive"}
                 </Badge>
                 <Badge tone="info" progress="complete">
-                  {showPosition === "beforeAddToCart"
+                  {showPosition === "addToCart"
                     ? "Add to Cart"
                     : showPosition === "onVisit"
                       ? "On Visit"

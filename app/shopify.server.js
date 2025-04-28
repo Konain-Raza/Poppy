@@ -5,8 +5,10 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+import { shopifyApp, BillingInterval } from "@shopify/shopify-app-remix/server";
 import prisma from "./db.server";
-
+export const FREE_PLAN = 'Free Plan';
+export const PRO_PLAN = 'Pro Plan';
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
@@ -14,6 +16,13 @@ const shopify = shopifyApp({
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
+  billing: {
+    [PRO_PLAN]: {
+      amount: 9.99,
+      currencyCode: 'USD',
+      test:true,
+      interval: BillingInterval.Every30Days, // monthly subscription
+    }},
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
   future: {

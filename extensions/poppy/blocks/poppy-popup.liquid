@@ -132,20 +132,21 @@
 
     const showPosition = matchingMetaobject.showPosition;
 
-    if(showPosition==="tabClose"){
-      window.addEventListener('onbeforeunload', function (e) {
-  const confirmationMessage = matchingMetaobject.description;
-  e.returnValue = confirmationMessage;
-  return confirmationMessage;
-});
+    if (showPosition === "tabClose") {
+  window.addEventListener('beforeunload', function (e) {
+    e.preventDefault(); // For some browsers
+    e.returnValue = true;
+  });
+}
 
-    }
+
+    
     if (showPosition === "onVisit") {
       modal.style.display = "flex"; // Show the modal on page load
       console.debug("Modal displayed on website visit.");
     }
     // 🛒 Intercept Add to Cart
-    if (showPosition === "beforeAddToCart") {
+    if (showPosition === "addToCart") {
       const addBtn = document.querySelector('[name="add"]');
       if (addBtn) {
         const clonedAddBtn = addBtn.cloneNode(true);

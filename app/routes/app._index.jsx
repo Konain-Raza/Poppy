@@ -3,67 +3,12 @@ import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { authenticate } from "../shopify.server.js";
 import { Page, EmptyState, Text } from "@shopify/polaris";
 import useAppStore from "../store/Store.js";
-import { useEffect } from "react";
 import AlertCard from "../components/AlertCard.jsx";
 import DeleteMetaobject from "../services/deleteMetaobject.js";
 import { PlusIcon } from "@shopify/polaris-icons";
 export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
-  const type = "alertium-by-konain-bhai";
-
-  const queryResponse = await admin.graphql(`
-    {
-      shop{
-  name
-  shopOwnerName
-}
-      products(first: 200) {
-        edges {
-          node {
-            id
-            title
-          }
-        }
-      }
-      metaobjects(type: "${type}", first: 250) {
-        edges {
-          node {
-            id
-            handle
-            displayName
-            fields {
-              key
-              jsonValue
-            }
-          }
-        }
-      }
-    }
-  `);
-
-  const queryData = await queryResponse.json();
-
-  const products = queryData.data.products.edges.map(({ node }) => ({
-    id: node.id,
-    title: node.title,
-  }));
-
-  const shop = queryData.data?.shop?.shopOwnerName;
-
-  const metaobjects = queryData.data.metaobjects.edges.map(({ node }) => {
-    const fields = Object.fromEntries(
-      node.fields.map((field) => [field.key, field.jsonValue]),
-    );
-
-    return {
-      id: node.id,
-      handle: node.handle,
-      displayName: node.displayName,
-      ...fields,
-    };
-  });
-
-  return json({ products, metaobjects, shop });
+  await authenticate.admin(request);
+  return null;
 };
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
@@ -81,14 +26,19 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { setProducts, setMetaobject } = useAppStore();
   const fetcher = useFetcher();
   const navigate = useNavigate();
-  const { products, metaobjects, shop } = useLoaderData();
-  useEffect(() => {
-    setProducts(products);
-    setMetaobject(metaobjects);
-  }, [products, metaobjects]);
+
+  const { metaobjects, shop, plan } = useAppStore();
+  const isCreatePopupDisabled = (
+    !(
+      plan?.hasActivePayment &&
+      plan?.appSubscriptions?.length > 0 &&
+      plan.appSubscriptions[0]?.status === "ACTIVE" &&
+      plan.appSubscriptions[0]?.name === "Pro Plan"
+    ) && metaobjects?.length >= 2
+  );
+  
   const confirmDeleteAlert = async (id) => {
     fetcher.submit(
       {
@@ -106,13 +56,14 @@ export default function Index() {
       title={`Hey ${shop}! 🎉 Ready to make popups that wow? 🤩`}
       primaryAction={{
         content: "Create Popup",
+        disabled: isCreatePopupDisabled,
         icon: PlusIcon,
         onAction: () => {
           navigate("/app/settings");
         },
       }}
     >
-      {metaobjects.length > 0 ? (
+      {metaobjects && metaobjects.length > 0 ? (
         metaobjects.map((alert) => (
           <AlertCard
             key={alert.id}

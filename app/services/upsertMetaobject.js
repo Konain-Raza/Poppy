@@ -44,14 +44,20 @@ const definitionExists = defCheckData.data.metaobjectDefinitionByType;
                 { name: "image", key: "image", type: "single_line_text_field" }, // for image, use file_reference
                 { name: "primaryText", key: "primaryText", type: "single_line_text_field" },
                 { name: "secondaryText", key: "secondaryText", type: "single_line_text_field" },
-                { name: "selectedProducts", key: "selectedProducts", type: "json" }, // for array-like data, use json
+                { name: "selectedProducts", key: "selectedProducts", type: "json" },
+                { name: "selectedCollections", key: "selectedCollections", type: "json" },
+
                 { name: "countryRestriction", key: "countryRestriction", type: "single_line_text_field" },
                 { name: "selectedCountries", key: "selectedCountries", type: "json" },
                 { name: "scheduleStatus", key: "scheduleStatus", type: "single_line_text_field" },
                 { name: "startDate", key: "startDate", type: "date_time" }, // changed to date_time type
                 { name: "endDate", key: "endDate", type: "date_time" }, // changed to date_time type
                 { name: "showPosition", key: "showPosition", type: "single_line_text_field" },
-                { name: "userOnly", key: "userOnly", type: "single_line_text_field" }
+                { name: "userOnly", key: "userOnly", type: "single_line_text_field" },
+                { name: "selectBy", key: "selectBy", type: "single_line_text_field" },
+                { name: "removeWatermark", key: "removeWatermark", type: "single_line_text_field" }
+
+
               ],
               
             },

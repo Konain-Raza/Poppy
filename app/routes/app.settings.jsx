@@ -11,6 +11,8 @@ import {
   Divider,
   DropZone,
   Thumbnail,
+  Modal,
+  Checkbox,
 } from "@shopify/polaris";
 import { useFetcher, useLocation, useNavigate } from "@remix-run/react";
 import AutocompleteSelect from "../components/SearchFilter";
@@ -35,8 +37,11 @@ export const action = async ({ request }) => {
   const imageFile = payload?.fileData;
   let imageUrl = null;
   if (imageFile && imageFile.fileSize > 0) {
-    const { uploadUrl, resourceUrl, parameters } = await getStagedUploadTarget(admin, imageFile);
-    
+    const { uploadUrl, resourceUrl, parameters } = await getStagedUploadTarget(
+      admin,
+      imageFile,
+    );
+
     // You might still need to POST the file to uploadUrl here using fetch or axios
     // If not already handled on frontend
     if (resourceUrl) {
@@ -45,7 +50,7 @@ export const action = async ({ request }) => {
       console.warn("Image upload did not return resourceUrl.");
     }
   }
-  
+
   const fields = [
     {
       key: "alertStatus",
@@ -63,7 +68,7 @@ export const action = async ({ request }) => {
     },
     {
       key: "image",
-      value: imageUrl || "none", 
+      value: imageUrl || "none",
     },
     {
       key: "primaryText",
@@ -79,6 +84,12 @@ export const action = async ({ request }) => {
       key: "selectedProducts",
       value: JSON.stringify(
         payload.selectedProducts || ["collection1", "collection2"],
+      ),
+    },
+    {
+      key: "selectedCollections",
+      value: JSON.stringify(
+        payload.selectedCollections || ["collection1", "collection2"],
       ),
     },
     {
@@ -106,14 +117,21 @@ export const action = async ({ request }) => {
       value: payload.showPosition || "top",
     },
     {
+      key: "selectBy",
+      value: payload.selectBy || "products",
+    },
+    {
       key: "userOnly",
       value: String(payload.userOnly ?? true), // force to string, handles boolean too
+    },
+    {
+      key: "removeWatermark",
+      value: String(payload.removeWatermark ?? true), // force to string, handles boolean too
     },
   ];
 
   console.log(payload.handle);
   const handle = payload.handle;
-
 
   await upsertMetaObject(admin, handle, fields);
 
@@ -124,10 +142,36 @@ export const action = async ({ request }) => {
 function AlertPopupSettingsPage() {
   const navigate = useNavigate();
 
-  const { products, metaobject } = useAppStore();
-  if (!products || !metaobject) {
+  const { products, metaobjects, collections, plan } = useAppStore();
+  const isCreatePopupDisabled = (
+    !(
+      plan?.hasActivePayment &&
+      plan?.appSubscriptions?.length > 0 &&
+      plan.appSubscriptions[0]?.status === "ACTIVE" &&
+      plan.appSubscriptions[0]?.name === "Pro Plan"
+    ) && metaobjects?.length >= 2
+  );
+  
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [removeWatermark, setRemoveWatermark] = useState(false);
+
+  const hasProPlan =
+    plan?.hasActivePayment &&
+    plan?.appSubscriptions?.length > 0 &&
+    plan.appSubscriptions[0]?.status === "ACTIVE" &&
+    plan.appSubscriptions[0]?.name === "Pro Plan";
+  console.log(hasProPlan);
+  if (!products || !metaobjects) {
     navigate("/app");
   }
+  const handleProFeature = (callback) => {
+    if (!hasProPlan) {
+      setShowUpgradeModal(true);
+    } else {
+      callback();
+    }
+  };
+
   const fetcher = useFetcher();
   const location = useLocation();
   const alertData = location.state?.alert;
@@ -142,8 +186,13 @@ function AlertPopupSettingsPage() {
     mimeType: "",
     resource: "",
   });
+  const [selectBy, setSelectBy] = useState("products");
+  const [selectedCollections, setSelectedCollections] = useState([]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
+  const [allCollections, setAllCollections] = useState([]);
+
   const [alertStatus, setAlertStatus] = useState("disable");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -186,22 +235,32 @@ function AlertPopupSettingsPage() {
   }, [alertData]);
 
   useEffect(() => {
-   
+    const allSelected =
+      metaobjects &&
+      metaobjects
+        .flatMap((obj) => obj.selectedProducts || [])
+        .filter((id) => !alertData?.selectedProducts?.includes(id));
 
-    const allSelected = metaobject &&
-      metaobject.flatMap((obj) => obj.selectedProducts || [])
-      .filter((id) => !alertData?.selectedProducts?.includes(id));
-
-    const filteredProducts = products && products?.length>0 &&
-      products.filter((product) => !allSelected.includes(product.id))
-      .map((product) => ({
-        label: product.title,
-        value: product.id,
+    const filteredProducts =
+      products &&
+      products?.length > 0 &&
+      products
+        .filter((product) => !allSelected.includes(product.id))
+        .map((product) => ({
+          label: product.title,
+          value: product.id,
+        }));
+    const filteredCollections =
+      collections &&
+      collections.length > 0 &&
+      collections.map((collection) => ({
+        label: collection.title,
+        value: collection.id,
       }));
 
-
     setAllProducts(filteredProducts);
-  }, [products, metaobject, alertData]);
+    setAllCollections(filteredCollections);
+  }, [products, metaobjects, alertData]);
 
   const convertToBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -286,7 +345,7 @@ function AlertPopupSettingsPage() {
 
     try {
       const payload = {
-        handle: alertData?.handle || `alert-${(metaobject?.length || 0) + 1}`,
+        handle: alertData?.handle || `alert-${(metaobjects?.length || 0) + 1}`,
         fileData,
         alertStatus,
         title,
@@ -301,12 +360,15 @@ function AlertPopupSettingsPage() {
         startDate,
         endDate,
         showPosition,
+        selectedCollections, 
+        selectBy, 
+        removeWatermark,
         userOnly,
       };
 
       fetcher.submit(
         {
-          metaobjectId: metaobject.id,
+          metaobjectId: metaobjects.id,
           payload: JSON.stringify(payload),
         },
         { method: "POST" },
@@ -333,7 +395,7 @@ function AlertPopupSettingsPage() {
         content: isSaving ? "Saving..." : "Save Settings",
         onAction: handleSave,
         loading: isSaving,
-        disabled: isSaving,
+        disabled: isSaving || isCreatePopupDisabled,
       }}
       divider
     >
@@ -417,50 +479,102 @@ function AlertPopupSettingsPage() {
 
           <Divider />
 
-          {/* Product Filter */}
           <Section
-            title="Target Products"
-            description="Choose which products this popup will appear on."
+            title="Popup Targeting"
+            description="Select when and where your popup should appear, and which products or collections it targets."
           >
             <Card>
-              <AutocompleteSelect
-                optionsData={allProducts}
-                disabled={isSaving}
-                label="Select Products"
-                placeholder="Type to search products"
-                onSelectChange={setSelectedProducts}
-                error={errors.collections}
-                preselectedOptions={alertData?.selectedProducts || []}
-                disable={isSaving}
-              />
+              <BlockStack gap="400">
+                <Select
+                  label="Trigger Event"
+                  options={[
+                    { label: "Site Wide", value: "sitewide" },
+                    { label: "Buy Now", value: "buynow" },
+                    { label: "Add to Cart", value: "addToCart" },
+                    { label: "Product Page", value: "productPage" },
+                    { label: "Close Intent", value: "closeIntent" },
+                  ]}
+                  value={showPosition}
+                  disabled={isSaving}
+                  onChange={(value) => {
+                    if (
+                      
+                      (value === "closeIntent" || value === "productPage"  && !hasProPlan)
+                    ) {
+                      setShowUpgradeModal(true);
+                    } else {
+                      setShowPosition(value);
+                    }
+                  }}
+                />
+
+                {/* Show Select By and Autocomplete only if not Site Wide */}
+                {showPosition !== "sitewide" || showPosition !== "closeIntent" && (
+                  <>
+                    <Select
+                      label="Select By"
+                      options={[
+                        { label: "Products", value: "products" },
+                        { label: "Collections", value: "collections" },
+                      ]}
+                      value={selectBy}
+                      disabled={isSaving}
+                      onChange={(value) => setSelectBy(value)}
+                    />
+
+                    {selectBy === "products" ? (
+                      <AutocompleteSelect
+                        optionsData={allProducts}
+                        disabled={isSaving}
+                        label="Select Products"
+                        placeholder="Type to search products"
+                        onSelectChange={setSelectedProducts}
+                        error={errors.products}
+                        preselectedOptions={alertData?.selectedProducts || []}
+                        disable={isSaving}
+                      />
+                    ) : (
+                      <AutocompleteSelect
+                        optionsData={allCollections}
+                        disabled={isSaving}
+                        label="Select Collections"
+                        placeholder="Type to search collections"
+                        onSelectChange={setSelectedCollections}
+                        error={errors.collections}
+                        preselectedOptions={
+                          alertData?.selectedCollections || []
+                        }
+                        disable={isSaving}
+                      />
+                    )}
+                  </>
+                )}
+              </BlockStack>
             </Card>
           </Section>
 
           <Divider />
-
-          {/* Display Position */}
           <Section
-            title="Popup Trigger"
-            description="Determine when the popup should appear."
+            title="Watermark Settings"
+            description="Choose if you want to remove the watermark from the popup image."
           >
             <Card>
-              <Select
-                label="Trigger Event"
-                options={[
-                  { label: "When Visiting the Page", value: "onVisit" },
-                  { label: "When at Checkout", value: "checkout" },
-                  { label: "When Adding to Cart", value: "addToCart" },
-                  { label: "When Closing Tab", value: "tabClose" }
-                ]}
-                value={showPosition}
-                disabled={isSaving}
-                onChange={setShowPosition}
-              />
+              <BlockStack gap="400">
+                <Checkbox
+                  label="Remove Watermark"
+                  checked={removeWatermark}
+                  disabled={isSaving}
+                  onChange={(checked) => {
+                    if (!hasProPlan) {
+                      setShowUpgradeModal(true);
+                    } else {
+                      setRemoveWatermark(checked);
+                    }
+                  }}
+                />
+              </BlockStack>
             </Card>
           </Section>
-
-          <Divider />
-
           {/* Schedule */}
           <Section
             title="Schedule Popup"
@@ -473,7 +587,9 @@ function AlertPopupSettingsPage() {
                   disabled={isSaving}
                   options={enableDisableOptions}
                   value={scheduleStatus}
-                  onChange={setScheduleStatus}
+                  onChange={(value) =>
+                    handleProFeature(() => setScheduleStatus(value))
+                  }
                 />
                 {scheduleStatus === "enable" && (
                   <InlineGrid columns={{ xs: "1fr", md: "1fr 1fr" }} gap="400">
@@ -543,6 +659,30 @@ function AlertPopupSettingsPage() {
           </Section>
         </BlockStack>
       </Box>
+      {showUpgradeModal && (
+        <Modal
+          open={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          title="Upgrade to Pro"
+          primaryAction={{
+            content: "Upgrade Now",
+            onAction: () => navigate("/app/pricing"),
+          }}
+          secondaryActions={[
+            {
+              content: "Cancel",
+              onAction: () => setShowUpgradeModal(false),
+            },
+          ]}
+        >
+          <Modal.Section>
+            <Text>
+              This feature is available only on the <strong>Pro Plan</strong>.
+              Upgrade to unlock it!
+            </Text>
+          </Modal.Section>
+        </Modal>
+      )}
     </Page>
   );
 }

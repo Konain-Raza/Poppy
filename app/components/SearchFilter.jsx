@@ -15,6 +15,7 @@ function AutocompleteSelect({
   const [selectedOptions, setSelectedOptions] = useState(preselectedOptions);
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState(optionsData);
+  const [open, setOpen] = useState(false); // NEW: control open/close manually
 
   const updateText = useCallback(
     (value) => {
@@ -22,14 +23,15 @@ function AutocompleteSelect({
 
       if (value === '') {
         setOptions(optionsData);
-        return;
+      } else {
+        const filterRegex = new RegExp(value, 'i');
+        const resultOptions = optionsData.filter((option) =>
+          option.label.match(filterRegex)
+        );
+        setOptions(resultOptions);
       }
 
-      const filterRegex = new RegExp(value, 'i');
-      const resultOptions = optionsData.filter((option) =>
-        option.label.match(filterRegex)
-      );
-      setOptions(resultOptions);
+      setOpen(true); // Always open options when typing
     },
     [optionsData]
   );
@@ -39,7 +41,6 @@ function AutocompleteSelect({
       let newSelection = selected;
 
       if (!allowMultiple) {
-        // Only keep the latest selected value in single-select mode
         newSelection = selected.slice(-1);
         const matchedOption = options.find((opt) => opt.value === newSelection[0]);
         setInputValue(matchedOption?.label || '');
@@ -79,6 +80,10 @@ function AutocompleteSelect({
   const textField = (
     <Autocomplete.TextField
       onChange={updateText}
+      onFocus={() => {
+        setOptions(optionsData); // Load all options again
+        setOpen(true);            // NEW: open options when field is focused
+      }}
       label={label}
       value={inputValue}
       placeholder={placeholder}
@@ -97,6 +102,9 @@ function AutocompleteSelect({
       onSelect={updateSelection}
       textField={textField}
       allowMultiple={allowMultiple}
+      open={open}                   // NEW: control open
+      onOpen={() => setOpen(true)}   // NEW: set open true
+      onClose={() => setOpen(false)} // NEW: set open false
     />
   );
 }
