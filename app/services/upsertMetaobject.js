@@ -46,7 +46,6 @@ const definitionExists = defCheckData.data.metaobjectDefinitionByType;
                 { name: "secondaryText", key: "secondaryText", type: "single_line_text_field" },
                 { name: "selectedProducts", key: "selectedProducts", type: "json" },
                 { name: "selectedCollections", key: "selectedCollections", type: "json" },
-
                 { name: "countryRestriction", key: "countryRestriction", type: "single_line_text_field" },
                 { name: "selectedCountries", key: "selectedCountries", type: "json" },
                 { name: "scheduleStatus", key: "scheduleStatus", type: "single_line_text_field" },
@@ -56,10 +55,7 @@ const definitionExists = defCheckData.data.metaobjectDefinitionByType;
                 { name: "userOnly", key: "userOnly", type: "single_line_text_field" },
                 { name: "selectBy", key: "selectBy", type: "single_line_text_field" },
                 { name: "removeWatermark", key: "removeWatermark", type: "single_line_text_field" }
-
-
               ],
-              
             },
           },
         }
@@ -112,15 +108,27 @@ const definitionExists = defCheckData.data.metaobjectDefinitionByType;
     const upsertData = await upsert.json();
     if (upsertData.data.metaobjectUpsert.userErrors.length > 0) {
       console.error("Upsert error:", upsertData.data.metaobjectUpsert.userErrors);
-      return { success: false, message: "Upsert failed", error: upsertData.data.metaobjectUpsert.userErrors };
+      return { success: false, message: "Upsert failed", error: upsertData.data.metaobjectUpsert.userErrors,  metaobject:[]  };
     }
-
-    console.log("MetaObject upserted successfully:", upsertData.data.metaobjectUpsert.metaobject);
-    return { success: true, data: upsertData.data.metaobjectUpsert.metaobject };
+    const transformedData = {
+      id: upsertData.data.metaobjectUpsert.metaobject?.id,
+      handle: upsertData.data.metaobjectUpsert.metaobject?.handle,
+      ...Object.fromEntries(
+        upsertData.data.metaobjectUpsert.metaobject?.fields.map(field => [
+          field.key, 
+          field.value.startsWith("[") || field.value.startsWith("{") 
+            ? JSON.parse(field.value) 
+            : field.value
+        ])
+      )
+    };
+    
+    console.log("MetaObject upserted successfully:", transformedData);
+    return { success: true, metaobject: transformedData };
 
   } catch (error) {
     console.error("Unexpected error:", error);
-    return { success: false, message: "Unexpected error", error };
+    return { success: false, message: "Unexpected error", error, metaobject:[] };
   }
 };
 

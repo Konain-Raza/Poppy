@@ -33,7 +33,23 @@ export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   let formData = await request.formData();
   const payload = JSON.parse(formData.get("payload"));
-  console.log("Payload", payload);
+  const image = formData.get("image");
+
+  console.log("Payload", image);
+  const fileDetails = {
+    name: image.name,
+    size: image.size,
+    type: image.type,
+    lastModified: image.lastModified,
+  };
+  
+  // Log the file details
+  console.log("File Details:", JSON.stringify(fileDetails, null, 2));
+const imageupload = await getStagedUploadTarget(
+  admin,
+  image,
+);
+console.log(imageupload)
   const imageFile = payload?.fileData;
   let imageUrl = null;
   if (imageFile && imageFile.fileSize > 0) {
@@ -133,25 +149,24 @@ export const action = async ({ request }) => {
   console.log(payload.handle);
   const handle = payload.handle;
 
-  await upsertMetaObject(admin, handle, fields);
+  // const { metaobject } = await upsertMetaObject(admin, handle, fields);
 
-  console.log(payload);
-  return json({ success: true });
+  return json({ success: true, metaobject:[] });
 };
 
 function AlertPopupSettingsPage() {
   const navigate = useNavigate();
 
-  const { products, metaobjects, collections, plan } = useAppStore();
-  const isCreatePopupDisabled = (
+  const { products, metaobjects, collections, plan, setMetaobjects } = useAppStore();
+  console.log(metaobjects);
+  const isCreatePopupDisabled =
     !(
       plan?.hasActivePayment &&
       plan?.appSubscriptions?.length > 0 &&
       plan.appSubscriptions[0]?.status === "ACTIVE" &&
       plan.appSubscriptions[0]?.name === "Pro Plan"
-    ) && metaobjects?.length >= 2
-  );
-  
+    ) && metaobjects?.length >= 2;
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [removeWatermark, setRemoveWatermark] = useState(false);
 
@@ -175,10 +190,36 @@ function AlertPopupSettingsPage() {
   const fetcher = useFetcher();
   const location = useLocation();
   const alertData = location.state?.alert;
-
+  useEffect(() => {
+    if (fetcher.data?.metaobject) {
+      console.log("Fetcher Metaobject:", fetcher.data.metaobject);
+  
+      const metaobjectIndex = metaobjects.findIndex(
+        obj => obj.id === fetcher.data.metaobject.id
+      );
+  
+      console.log("Metaobject Index:", metaobjectIndex);
+  
+      if (metaobjectIndex !== -1) {
+        const updatedMetaobjects = [...metaobjects];
+        updatedMetaobjects[metaobjectIndex] = fetcher.data.metaobject;
+        console.log("Updated Metaobjects:", updatedMetaobjects);
+        setMetaobjects(updatedMetaobjects);
+      } else {
+        console.log("Adding new Metaobject:", fetcher.data.metaobject);
+        setMetaobjects([...metaobjects, fetcher.data.metaobject]);
+      }
+    }
+  }, [fetcher.data]);
+  
   const enableDisableOptions = [
     { label: "Enable", value: "enable" },
     { label: "Disable", value: "disable" },
+  ];
+
+  const activeInactiveOptions = [
+    { label: "Active", value: "Active" },
+    { label: "Inactive", value: "inactive" },
   ];
   const [fileData, setFileData] = useState({
     filename: "",
@@ -188,19 +229,26 @@ function AlertPopupSettingsPage() {
   });
   const [selectBy, setSelectBy] = useState("products");
   const [selectedCollections, setSelectedCollections] = useState([]);
-
+  const [positionOptions, setPositionOptions] = useState([
+    { label: "Site Wite", value: "sitewite" },
+    { label: "Buy Now", value: "buynow" },
+    { label: "Add to Cart", value: "addToCart" },
+    { label: "Product Page", value: "productPage" },
+    { label: "Close Intent", value: "closeIntent" },
+    { label: "Maintainance", value: "maintainance" },
+  ]);
   const [isSaving, setIsSaving] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [allCollections, setAllCollections] = useState([]);
 
-  const [alertStatus, setAlertStatus] = useState("disable");
+  const [alertStatus, setAlertStatus] = useState("inactive");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState({});
   const [primaryText, setPrimaryText] = useState("");
   const [secondaryText, setSecondaryText] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [countryRestriction, setCountryRestriction] = useState("disable");
+  const [countryRestriction, setCountryRestriction] = useState("inactive");
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [scheduleStatus, setScheduleStatus] = useState("disable");
   const [startDate, setStartDate] = useState(new Date());
@@ -213,6 +261,14 @@ function AlertPopupSettingsPage() {
     collections: "",
     countries: "",
   });
+  useEffect(() => {
+    if (!alertData && isCreatePopupDisabled) {
+      shopify.toast.show(
+        "🚫 No alert data and creation is disabled. Redirecting...",
+      );
+      navigate("/app");
+    }
+  }, [alertData, isCreatePopupDisabled, navigate]);
 
   useEffect(() => {
     if (alertData) {
@@ -231,6 +287,9 @@ function AlertPopupSettingsPage() {
       setEndDate(new Date(alertData.endDate) || new Date());
       setShowPosition(alertData.showPosition || "addToCart");
       setUserOnly(alertData.userOnly || "disable");
+      setSelectBy(alertData?.selectBy || "products");
+      setRemoveWatermark(alertData.removeWatermark || false);
+      setSelectedCollections(alertData.selectedCollections || []);
     }
   }, [alertData]);
 
@@ -258,8 +317,27 @@ function AlertPopupSettingsPage() {
         value: collection.id,
       }));
 
+    const metaobjectPositions = metaobjects?.map((obj) => obj.showPosition);
+
+    const filteredOptions = positionOptions.filter((option) => {
+      if (alertData?.showPosition === option.value) {
+        return true;
+      }
+
+      return (
+        !["sitewite", "maintainance", "closeIntent"].includes(option.value) ||
+        !metaobjectPositions.includes(option.value)
+      );
+    });
+
+    setPositionOptions(filteredOptions);
+    console.log(filteredOptions);
+
     setAllProducts(filteredProducts);
     setAllCollections(filteredCollections);
+    if (isCreatePopupDisabled) {
+      console.log("You cant create one more");
+    }
   }, [products, metaobjects, alertData]);
 
   const convertToBase64 = (file) =>
@@ -273,14 +351,17 @@ function AlertPopupSettingsPage() {
   const handleDrop = useCallback(async (_dropFiles, acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file) {
-      const base64 = await convertToBase64(file);
-      setImage(base64);
-      setFileData({
-        filename: file.name, // File name with extension
-        fileSize: file.size, // File size in bytes
-        mimeType: file.type, // MIME type of the file
-        resource: "IMAGE", // Base64 string of the file
-      });
+      const imageUrl = URL.createObjectURL(file);
+    
+      // Update image state with the URL
+      setImage(file);
+      console.log(file)
+      // setFileData({
+      //   filename: file.name, // File name with extension
+      //   fileSize: file.size, // File size in bytes
+      //   mimeType: file.type, // MIME type of the file
+      //   resource: "IMAGE", // Base64 string of the file
+      // });
     }
   }, []);
   const resetFields = () => {
@@ -307,6 +388,7 @@ function AlertPopupSettingsPage() {
   };
 
   const handleSave = async () => {
+    console.log("file", image)
     setIsSaving(true);
     let hasError = false;
     const newErrors = {
@@ -324,10 +406,10 @@ function AlertPopupSettingsPage() {
       newErrors.description = "Description is required";
       hasError = true;
     }
-    if (selectedProducts.length === 0) {
-      newErrors.collections = "Select at least one product.";
-      hasError = true;
-    }
+    // if (selectedProducts.length === 0) {
+    //   newErrors.collections = "Select at least one product.";
+    //   hasError = true;
+    // }
 
     if (countryRestriction === "enable" && selectedCountries.length === 0) {
       newErrors.countries = "Select at least one country";
@@ -360,16 +442,19 @@ function AlertPopupSettingsPage() {
         startDate,
         endDate,
         showPosition,
-        selectedCollections, 
-        selectBy, 
+        selectedCollections,
+        selectBy,
         removeWatermark,
         userOnly,
       };
+      console.log("Sending Payload,", payload)
 
       fetcher.submit(
         {
           metaobjectId: metaobjects.id,
           payload: JSON.stringify(payload),
+          image
+          
         },
         { method: "POST" },
       );
@@ -395,7 +480,7 @@ function AlertPopupSettingsPage() {
         content: isSaving ? "Saving..." : "Save Settings",
         onAction: handleSave,
         loading: isSaving,
-        disabled: isSaving || isCreatePopupDisabled,
+        disabled: isSaving,
       }}
       divider
     >
@@ -439,25 +524,27 @@ function AlertPopupSettingsPage() {
                   error={errors.description}
                   helpText="Describe the message or offer you want to show to your customers."
                 />
+                {showPosition != "maintainance" && (
+                  <>
+                    <TextField
+                      label="Primary Button Label"
+                      value={primaryText}
+                      disabled={isSaving}
+                      maxLength={20}
+                      onChange={setPrimaryText}
+                      helpText="Main call-to-action (e.g., 'Shop Now', 'Subscribe')."
+                    />
 
-                <TextField
-                  label="Primary Button Label"
-                  value={primaryText}
-                  disabled={isSaving}
-                  maxLength={20}
-                  onChange={setPrimaryText}
-                  helpText="Main call-to-action (e.g., 'Shop Now', 'Subscribe')."
-                />
-
-                <TextField
-                  label="Secondary Button Label"
-                  value={secondaryText}
-                  disabled={isSaving}
-                  maxLength={20}
-                  onChange={setSecondaryText}
-                  helpText="Optional secondary action (e.g., 'No thanks', 'Dismiss')."
-                />
-
+                    <TextField
+                      label="Secondary Button Label"
+                      value={secondaryText}
+                      disabled={isSaving}
+                      maxLength={20}
+                      onChange={setSecondaryText}
+                      helpText="Optional secondary action (e.g., 'No thanks', 'Dismiss')."
+                    />
+                  </>
+                )}
                 <DropZone
                   label="Popup Image"
                   onDrop={handleDrop}
@@ -468,7 +555,9 @@ function AlertPopupSettingsPage() {
                     <DropZone.FileUpload />
                   ) : (
                     <InlineGrid align="center" alignItems="center">
-                      <Thumbnail size="small" alt="Popup" source={image} />
+                      {/* <Thumbnail size="small" alt="Popup" source={image} /> */}
+                    <DropZone.FileUpload />
+
                       <Text variant="bodyMd">Image Uploaded</Text>
                     </InlineGrid>
                   )}
@@ -487,19 +576,14 @@ function AlertPopupSettingsPage() {
               <BlockStack gap="400">
                 <Select
                   label="Trigger Event"
-                  options={[
-                    { label: "Site Wide", value: "sitewide" },
-                    { label: "Buy Now", value: "buynow" },
-                    { label: "Add to Cart", value: "addToCart" },
-                    { label: "Product Page", value: "productPage" },
-                    { label: "Close Intent", value: "closeIntent" },
-                  ]}
+                  options={positionOptions}
                   value={showPosition}
                   disabled={isSaving}
                   onChange={(value) => {
                     if (
-                      
-                      (value === "closeIntent" || value === "productPage"  && !hasProPlan)
+                      value === "closeIntent" &&
+                      value === "productPage" &&
+                      !hasProPlan
                     ) {
                       setShowUpgradeModal(true);
                     } else {
@@ -509,46 +593,54 @@ function AlertPopupSettingsPage() {
                 />
 
                 {/* Show Select By and Autocomplete only if not Site Wide */}
-                {showPosition !== "sitewide" || showPosition !== "closeIntent" && (
-                  <>
-                    <Select
-                      label="Select By"
-                      options={[
-                        { label: "Products", value: "products" },
-                        { label: "Collections", value: "collections" },
-                      ]}
-                      value={selectBy}
-                      disabled={isSaving}
-                      onChange={(value) => setSelectBy(value)}
-                    />
+                {showPosition !== "sitewite" &&
+                  showPosition !== "maintainance" &&
+                  showPosition !== "closeIntent" && (
+                    <>
+                      <Select
+                        label="Select By"
+                        options={[
+                          { label: "Products", value: "products" },
+                          { label: "Collections", value: "collections" },
+                        ]}
+                        value={selectBy}
+                        disabled={isSaving}
+                        onChange={(value) => setSelectBy(value)}
+                      />
 
-                    {selectBy === "products" ? (
-                      <AutocompleteSelect
-                        optionsData={allProducts}
-                        disabled={isSaving}
-                        label="Select Products"
-                        placeholder="Type to search products"
-                        onSelectChange={setSelectedProducts}
-                        error={errors.products}
-                        preselectedOptions={alertData?.selectedProducts || []}
-                        disable={isSaving}
-                      />
-                    ) : (
-                      <AutocompleteSelect
-                        optionsData={allCollections}
-                        disabled={isSaving}
-                        label="Select Collections"
-                        placeholder="Type to search collections"
-                        onSelectChange={setSelectedCollections}
-                        error={errors.collections}
-                        preselectedOptions={
-                          alertData?.selectedCollections || []
-                        }
-                        disable={isSaving}
-                      />
-                    )}
-                  </>
-                )}
+                      {selectBy === "products" ? (
+                        <AutocompleteSelect
+                          optionsData={allProducts}
+                          disabled={isSaving}
+                          label="Select Products"
+                          placeholder="Type to search products"
+                          onSelectChange={(selected) => {
+                            setSelectedProducts(selected);  // Set selected products
+                            setSelectedCollections([]);     // Clear selected collections
+                          }}
+                          error={errors.products}
+                          preselectedOptions={alertData?.selectedProducts || []}
+                          disable={isSaving}
+                        />
+                      ) : (
+                        <AutocompleteSelect
+                          optionsData={allCollections}
+                          disabled={isSaving}
+                          label="Select Collections"
+                          placeholder="Type to search collections"
+                          onSelectChange={(selected) => {
+                            setSelectedCollections(selected);  // Set selected collections
+                            setSelectedProducts([]);           // Clear selected products
+                          }}
+                          error={errors.collections}
+                          preselectedOptions={
+                            alertData?.selectedCollections || []
+                          }
+                          disable={isSaving}
+                        />
+                      )}
+                    </>
+                  )}
               </BlockStack>
             </Card>
           </Section>
@@ -562,7 +654,7 @@ function AlertPopupSettingsPage() {
               <BlockStack gap="400">
                 <Checkbox
                   label="Remove Watermark"
-                  checked={removeWatermark}
+                  checked={removeWatermark == true}
                   disabled={isSaving}
                   onChange={(checked) => {
                     if (!hasProPlan) {

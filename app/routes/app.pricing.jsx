@@ -2,11 +2,12 @@ import { useFetcher } from "@remix-run/react";
 import { authenticate, PRO_PLAN } from "../shopify.server";
 import { Page, Card, Layout, Text, BlockStack, Button } from "@shopify/polaris";
 import useAppStore from "../store/Store";
+import updateBillingMetaobject from "../services/updateBillingMetaobject";
 
 export const action = async ({ request }) => {
   console.log("🚀 Action triggered");
 
-  const { billing, redirect, session } = await authenticate.admin(request);
+  const { billing, redirect, session, admin } = await authenticate.admin(request);
   const formData = await request.formData();
   const { shop } = session;
   let shopName = shop.replace(".myshopify.com", "");
@@ -38,6 +39,8 @@ export const action = async ({ request }) => {
     } else {
       console.log("ℹ️ No active Pro subscription found.");
     }
+    await updateBillingMetaobject(admin, "free");
+    console.log("📝 Updated billing metaobject to 'free'");
 
     return redirect("/app"); // ✅ Proper redirect
   }
@@ -57,6 +60,8 @@ export const action = async ({ request }) => {
       },
     });
     console.log("🏁 Billing already active or just activated, redirecting...");
+    await updateBillingMetaobject(admin, "pro");
+    console.log("📝 Updated billing metaobject to 'free'");
     return redirect("/app/pricing"); // ✅ Proper redirect
   }
 

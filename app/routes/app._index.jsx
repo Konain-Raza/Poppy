@@ -6,6 +6,7 @@ import useAppStore from "../store/Store.js";
 import AlertCard from "../components/AlertCard.jsx";
 import DeleteMetaobject from "../services/deleteMetaobject.js";
 import { PlusIcon } from "@shopify/polaris-icons";
+import { useEffect } from "react";
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
   return null;
@@ -38,7 +39,7 @@ export default function Index() {
       plan.appSubscriptions[0]?.name === "Pro Plan"
     ) && metaobjects?.length >= 2
   );
-  
+
   const confirmDeleteAlert = async (id) => {
     fetcher.submit(
       {
@@ -49,7 +50,8 @@ export default function Index() {
   };
 
   const handleSave = () => {
-    navigate("app/settings");
+    navigate("/app/settings");
+
   };
   return (
     <Page
