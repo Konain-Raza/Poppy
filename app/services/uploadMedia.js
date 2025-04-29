@@ -1,9 +1,4 @@
-const convertBlobToFile = async (blobUrl, fileName) => {
-  const response = await fetch(blobUrl); // Fetch the blob data
-  const blob = await response.blob();   // Get the blob data
-  const file = new File([blob], fileName, { type: blob.type }); // Create a File object
-  return file;
-};
+
 
 
 export async function getStagedUploadTarget(admin, file) {
@@ -35,11 +30,11 @@ export async function getStagedUploadTarget(admin, file) {
         variables: {
           input: [
             {
-              filename: "comment.png",
-              mimeType: "image/png",
-              resource: "IMAGE", // For image upload
+              filename: file.name,
+              mimeType: file.type,
+              fileSize: file.size.toString(),
+              resource:  "IMAGE", // For image upload
               httpMethod: "POST", // POST for file upload
-              fileSize: "17358",
             },
           ],
         },
@@ -90,7 +85,7 @@ export async function getStagedUploadTarget(admin, file) {
 
     // Return the resource URL from the response
     return {
-      resourceUrl: target.resourceUrl, // This URL can be used in your store
+      resourceUrl: target.url, // This URL can be used in your store
       message: "Upload and storage successful",
     };
   } catch (error) {

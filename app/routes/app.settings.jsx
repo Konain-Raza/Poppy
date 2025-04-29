@@ -32,41 +32,10 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   let formData = await request.formData();
-  const payload = JSON.parse(formData.get("payload"));
   const image = formData.get("image");
-
-  console.log("Payload", image);
-  const fileDetails = {
-    name: image.name,
-    size: image.size,
-    type: image.type,
-    lastModified: image.lastModified,
-  };
-  
-  // Log the file details
-  console.log("File Details:", JSON.stringify(fileDetails, null, 2));
-const imageupload = await getStagedUploadTarget(
-  admin,
-  image,
-);
-console.log(imageupload)
-  const imageFile = payload?.fileData;
-  let imageUrl = null;
-  if (imageFile && imageFile.fileSize > 0) {
-    const { uploadUrl, resourceUrl, parameters } = await getStagedUploadTarget(
-      admin,
-      imageFile,
-    );
-
-    // You might still need to POST the file to uploadUrl here using fetch or axios
-    // If not already handled on frontend
-    if (resourceUrl) {
-      imageUrl = resourceUrl;
-    } else {
-      console.warn("Image upload did not return resourceUrl.");
-    }
-  }
-
+  const payload = formData.get("payload");
+  const { resourceUrl } = await getStagedUploadTarget(admin, image);
+  console.log(resourceUrl);
   const fields = [
     {
       key: "alertStatus",
@@ -84,7 +53,7 @@ console.log(imageupload)
     },
     {
       key: "image",
-      value: imageUrl || "none",
+      value: resourceUrl || "none",
     },
     {
       key: "primaryText",
@@ -146,18 +115,19 @@ console.log(imageupload)
     },
   ];
 
-  console.log(payload.handle);
-  const handle = payload.handle;
+  console.log("Fields", fields);
+  // const handle = payload.handle;
 
   // const { metaobject } = await upsertMetaObject(admin, handle, fields);
 
-  return json({ success: true, metaobject:[] });
+  return json({ success: true, metaobject: [] });
 };
 
 function AlertPopupSettingsPage() {
   const navigate = useNavigate();
 
-  const { products, metaobjects, collections, plan, setMetaobjects } = useAppStore();
+  const { products, metaobjects, collections, plan, setMetaobjects } =
+    useAppStore();
   console.log(metaobjects);
   const isCreatePopupDisabled =
     !(
@@ -193,13 +163,13 @@ function AlertPopupSettingsPage() {
   useEffect(() => {
     if (fetcher.data?.metaobject) {
       console.log("Fetcher Metaobject:", fetcher.data.metaobject);
-  
+
       const metaobjectIndex = metaobjects.findIndex(
-        obj => obj.id === fetcher.data.metaobject.id
+        (obj) => obj.id === fetcher.data.metaobject.id,
       );
-  
+
       console.log("Metaobject Index:", metaobjectIndex);
-  
+
       if (metaobjectIndex !== -1) {
         const updatedMetaobjects = [...metaobjects];
         updatedMetaobjects[metaobjectIndex] = fetcher.data.metaobject;
@@ -211,7 +181,7 @@ function AlertPopupSettingsPage() {
       }
     }
   }, [fetcher.data]);
-  
+
   const enableDisableOptions = [
     { label: "Enable", value: "enable" },
     { label: "Disable", value: "disable" },
@@ -351,11 +321,10 @@ function AlertPopupSettingsPage() {
   const handleDrop = useCallback(async (_dropFiles, acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-    
       // Update image state with the URL
       setImage(file);
-      console.log(file)
+      console.log(file);
+      console.log(file.name);
       // setFileData({
       //   filename: file.name, // File name with extension
       //   fileSize: file.size, // File size in bytes
@@ -388,7 +357,7 @@ function AlertPopupSettingsPage() {
   };
 
   const handleSave = async () => {
-    console.log("file", image)
+    console.log("file", image);
     setIsSaving(true);
     let hasError = false;
     const newErrors = {
@@ -447,16 +416,20 @@ function AlertPopupSettingsPage() {
         removeWatermark,
         userOnly,
       };
-      console.log("Sending Payload,", payload)
+      console.log("Sending Payload,", payload);
+      const formData = new FormData();
+      console.log("Image State", image);
+      formData.append("image", image);
+      formData.append("payload", payload);
 
       fetcher.submit(
-        {
-          metaobjectId: metaobjects.id,
-          payload: JSON.stringify(payload),
-          image
-          
-        },
-        { method: "POST" },
+        // {
+        //   metaobjectId: metaobjects.id,
+        //   payload: JSON.stringify(payload),
+        //   image,
+        // },
+        formData,
+        { method: "POST", encType: "multipart/form-data" },
       );
 
       shopify.toast.show("✅ All set! Popup saved without a hitch");
@@ -556,7 +529,7 @@ function AlertPopupSettingsPage() {
                   ) : (
                     <InlineGrid align="center" alignItems="center">
                       {/* <Thumbnail size="small" alt="Popup" source={image} /> */}
-                    <DropZone.FileUpload />
+                      <DropZone.FileUpload />
 
                       <Text variant="bodyMd">Image Uploaded</Text>
                     </InlineGrid>
@@ -615,8 +588,8 @@ function AlertPopupSettingsPage() {
                           label="Select Products"
                           placeholder="Type to search products"
                           onSelectChange={(selected) => {
-                            setSelectedProducts(selected);  // Set selected products
-                            setSelectedCollections([]);     // Clear selected collections
+                            setSelectedProducts(selected); // Set selected products
+                            setSelectedCollections([]); // Clear selected collections
                           }}
                           error={errors.products}
                           preselectedOptions={alertData?.selectedProducts || []}
@@ -629,8 +602,8 @@ function AlertPopupSettingsPage() {
                           label="Select Collections"
                           placeholder="Type to search collections"
                           onSelectChange={(selected) => {
-                            setSelectedCollections(selected);  // Set selected collections
-                            setSelectedProducts([]);           // Clear selected products
+                            setSelectedCollections(selected); // Set selected collections
+                            setSelectedProducts([]); // Clear selected products
                           }}
                           error={errors.collections}
                           preselectedOptions={
