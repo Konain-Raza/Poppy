@@ -76,7 +76,7 @@ export async function getStagedUploadTarget(admin, file) {
       method: "POST",
       body: formData,
     });
-    console.log(uploadUrl);
+    console.log(uploadResponse);
     if (!uploadResponse.ok) {
       throw new Error("File upload to Shopify failed.");
     }
@@ -85,7 +85,7 @@ export async function getStagedUploadTarget(admin, file) {
 
     // Return the resource URL from the response
     return {
-      resourceUrl: target.url, // This URL can be used in your store
+      resourceUrl: target.resourceUrl, // This URL can be used in your store
       message: "Upload and storage successful",
     };
   } catch (error) {

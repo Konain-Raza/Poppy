@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -6,8 +6,8 @@ import {
   Popover,
   Card,
   DatePicker,
-} from '@shopify/polaris';
-import { CalendarIcon } from '@shopify/polaris-icons';
+} from "@shopify/polaris";
+import { CalendarIcon } from "@shopify/polaris-icons";
 
 const DatePickerSingle = ({ label, onDateChange, disableBefore }) => {
   const [visible, setVisible] = useState(false);

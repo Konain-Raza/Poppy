@@ -13,7 +13,11 @@ import {
   Thumbnail,
   Modal,
   Checkbox,
+  Button,
+  InlineStack,
+  Label,
 } from "@shopify/polaris";
+import { DeleteIcon } from "@shopify/polaris-icons";
 import { useFetcher, useLocation, useNavigate } from "@remix-run/react";
 import AutocompleteSelect from "../components/SearchFilter";
 import DatePickerSingle from "../components/DatePicker";
@@ -23,6 +27,7 @@ import { authenticate } from "../shopify.server";
 import useAppStore from "../store/Store";
 import upsertMetaObject from "../services/upsertMetaobject";
 import { getStagedUploadTarget } from "../services/uploadMedia";
+import PremiumBadge from "../components/PremiumBadge";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -30,12 +35,19 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, redirect } = await authenticate.admin(request);
   let formData = await request.formData();
   const image = formData.get("image");
-  const payload = formData.get("payload");
-  const { resourceUrl } = await getStagedUploadTarget(admin, image);
-  console.log(resourceUrl);
+  console.log("Image", image);
+
+  const payload = JSON.parse(formData.get("payload"));
+  let resourceUrl = "";
+
+  if (image && typeof image === "object" && image.size > 0) {
+    const result = await getStagedUploadTarget(admin, image);
+    resourceUrl = result.resourceUrl || "";
+  }
+  console.log("Payload", payload);
   const fields = [
     {
       key: "alertStatus",
@@ -53,7 +65,7 @@ export const action = async ({ request }) => {
     },
     {
       key: "image",
-      value: resourceUrl || "none",
+      value: resourceUrl || "",
     },
     {
       key: "primaryText",
@@ -107,114 +119,61 @@ export const action = async ({ request }) => {
     },
     {
       key: "userOnly",
-      value: String(payload.userOnly ?? true), // force to string, handles boolean too
+      value: String(payload.userOnly ?? true),
     },
     {
       key: "removeWatermark",
-      value: String(payload.removeWatermark ?? true), // force to string, handles boolean too
+      value: String(payload.removeWatermark ?? true),
     },
   ];
 
   console.log("Fields", fields);
-  // const handle = payload.handle;
+  const handle = payload.handle;
 
-  // const { metaobject } = await upsertMetaObject(admin, handle, fields);
-
-  return json({ success: true, metaobject: [] });
+  const { metaobject } = await upsertMetaObject(admin, handle, fields);
+  return json({ success: true, metaobject });
 };
 
 function AlertPopupSettingsPage() {
-  const navigate = useNavigate();
+  // Imports and Setup
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fetcher = useFetcher();
   const { products, metaobjects, collections, plan, setMetaobjects } =
     useAppStore();
-  console.log(metaobjects);
-  const isCreatePopupDisabled =
-    !(
-      plan?.hasActivePayment &&
-      plan?.appSubscriptions?.length > 0 &&
-      plan.appSubscriptions[0]?.status === "ACTIVE" &&
-      plan.appSubscriptions[0]?.name === "Pro Plan"
-    ) && metaobjects?.length >= 2;
+  const alertData = location.state?.alert;
 
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [removeWatermark, setRemoveWatermark] = useState(false);
+  // Plan Values
 
   const hasProPlan =
     plan?.hasActivePayment &&
     plan?.appSubscriptions?.length > 0 &&
     plan.appSubscriptions[0]?.status === "ACTIVE" &&
     plan.appSubscriptions[0]?.name === "Pro Plan";
-  console.log(hasProPlan);
-  if (!products || !metaobjects) {
-    navigate("/app");
-  }
-  const handleProFeature = (callback) => {
-    if (!hasProPlan) {
-      setShowUpgradeModal(true);
-    } else {
-      callback();
-    }
-  };
 
-  const fetcher = useFetcher();
-  const location = useLocation();
-  const alertData = location.state?.alert;
-  useEffect(() => {
-    if (fetcher.data?.metaobject) {
-      console.log("Fetcher Metaobject:", fetcher.data.metaobject);
+  const isCreatePopupDisabled = !hasProPlan && metaobjects?.length >= 2;
 
-      const metaobjectIndex = metaobjects.findIndex(
-        (obj) => obj.id === fetcher.data.metaobject.id,
-      );
+  if (!products || !metaobjects) navigate("/app");
 
-      console.log("Metaobject Index:", metaobjectIndex);
+  // UI State
 
-      if (metaobjectIndex !== -1) {
-        const updatedMetaobjects = [...metaobjects];
-        updatedMetaobjects[metaobjectIndex] = fetcher.data.metaobject;
-        console.log("Updated Metaobjects:", updatedMetaobjects);
-        setMetaobjects(updatedMetaobjects);
-      } else {
-        console.log("Adding new Metaobject:", fetcher.data.metaobject);
-        setMetaobjects([...metaobjects, fetcher.data.metaobject]);
-      }
-    }
-  }, [fetcher.data]);
-
-  const enableDisableOptions = [
-    { label: "Enable", value: "enable" },
-    { label: "Disable", value: "disable" },
-  ];
-
-  const activeInactiveOptions = [
-    { label: "Active", value: "Active" },
-    { label: "Inactive", value: "inactive" },
-  ];
-  const [fileData, setFileData] = useState({
-    filename: "",
-    fileSize: 0,
-    mimeType: "",
-    resource: "",
-  });
-  const [selectBy, setSelectBy] = useState("products");
-  const [selectedCollections, setSelectedCollections] = useState([]);
-  const [positionOptions, setPositionOptions] = useState([
-    { label: "Site Wite", value: "sitewite" },
-    { label: "Buy Now", value: "buynow" },
-    { label: "Add to Cart", value: "addToCart" },
-    { label: "Product Page", value: "productPage" },
-    { label: "Close Intent", value: "closeIntent" },
-    { label: "Maintainance", value: "maintainance" },
-  ]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [removeWatermark, setRemoveWatermark] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [allProducts, setAllProducts] = useState([]);
-  const [allCollections, setAllCollections] = useState([]);
+  const [errors, setErrors] = useState({
+    title: "",
+    description: "",
+    collections: "",
+    countries: "",
+  });
+
+  // Form Input States
 
   const [alertStatus, setAlertStatus] = useState("inactive");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState({});
+  const [image, setImage] = useState(null);
   const [primaryText, setPrimaryText] = useState("");
   const [secondaryText, setSecondaryText] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -225,20 +184,42 @@ function AlertPopupSettingsPage() {
   const [endDate, setEndDate] = useState(new Date());
   const [showPosition, setShowPosition] = useState("addToCart");
   const [userOnly, setUserOnly] = useState("disable");
-  const [errors, setErrors] = useState({
-    title: "",
-    description: "",
-    collections: "",
-    countries: "",
-  });
+  const [selectBy, setSelectBy] = useState("products");
+  const [selectedCollections, setSelectedCollections] = useState([]);
+
+  // Dropdown Options
+
+  const [positionOptions, setPositionOptions] = useState([
+    { label: "Site Wite", value: "sitewite" },
+    { label: "Buy Now", value: "buynow" },
+    { label: "Add to Cart", value: "addToCart" },
+    { label: "Maintainance", value: "maintainance" },
+    { label: "Product Page (Pro)", value: "productPage" },
+    { label: "Close Intent (Pro)", value: "closeIntent" },
+  ]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [allCollections, setAllCollections] = useState([]);
+  const enableDisableOptions = [
+    { label: "Enable", value: "enable" },
+    { label: "Disable", value: "disable" },
+  ];
+  const activeInactiveOptions = [
+    { label: "Active", value: "Active" },
+    { label: "Inactive", value: "inactive" },
+  ];
+
+  // useEffect – Guard if popup creation is disabled
+
   useEffect(() => {
     if (!alertData && isCreatePopupDisabled) {
       shopify.toast.show(
-        "🚫 No alert data and creation is disabled. Redirecting...",
+        "🚫 No alert data and creation is disabled. Upgrade the plan to create more...",
       );
       navigate("/app");
     }
   }, [alertData, isCreatePopupDisabled, navigate]);
+
+  // useEffect – Populate fields from alert data
 
   useEffect(() => {
     if (alertData) {
@@ -257,43 +238,40 @@ function AlertPopupSettingsPage() {
       setEndDate(new Date(alertData.endDate) || new Date());
       setShowPosition(alertData.showPosition || "addToCart");
       setUserOnly(alertData.userOnly || "disable");
-      setSelectBy(alertData?.selectBy || "products");
+      setSelectBy(alertData.selectBy || "products");
       setRemoveWatermark(alertData.removeWatermark || false);
       setSelectedCollections(alertData.selectedCollections || []);
     }
   }, [alertData]);
 
+  // useEffect – Update products/collections/options
+
   useEffect(() => {
-    const allSelected =
-      metaobjects &&
-      metaobjects
-        .flatMap((obj) => obj.selectedProducts || [])
-        .filter((id) => !alertData?.selectedProducts?.includes(id));
+    const allSelected = metaobjects
+      ?.flatMap((obj) => obj.selectedProducts || [])
+      .filter((id) => !alertData?.selectedProducts?.includes(id));
 
     const filteredProducts =
-      products &&
-      products?.length > 0 &&
-      products
-        .filter((product) => !allSelected.includes(product.id))
-        .map((product) => ({
-          label: product.title,
-          value: product.id,
-        }));
+      products?.length > 0
+        ? products
+            .filter((product) => !allSelected.includes(product.id))
+            .map((product) => ({
+              label: product.title,
+              value: product.id,
+            }))
+        : [];
+
     const filteredCollections =
-      collections &&
-      collections.length > 0 &&
-      collections.map((collection) => ({
-        label: collection.title,
-        value: collection.id,
-      }));
+      collections?.length > 0
+        ? collections.map((collection) => ({
+            label: collection.title,
+            value: collection.id,
+          }))
+        : [];
 
     const metaobjectPositions = metaobjects?.map((obj) => obj.showPosition);
-
     const filteredOptions = positionOptions.filter((option) => {
-      if (alertData?.showPosition === option.value) {
-        return true;
-      }
-
+      if (alertData?.showPosition === option.value) return true;
       return (
         !["sitewite", "maintainance", "closeIntent"].includes(option.value) ||
         !metaobjectPositions.includes(option.value)
@@ -301,38 +279,44 @@ function AlertPopupSettingsPage() {
     });
 
     setPositionOptions(filteredOptions);
-    console.log(filteredOptions);
-
     setAllProducts(filteredProducts);
     setAllCollections(filteredCollections);
-    if (isCreatePopupDisabled) {
-      console.log("You cant create one more");
-    }
   }, [products, metaobjects, alertData]);
 
-  const convertToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-    });
-
-  const handleDrop = useCallback(async (_dropFiles, acceptedFiles) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      // Update image state with the URL
-      setImage(file);
-      console.log(file);
-      console.log(file.name);
-      // setFileData({
-      //   filename: file.name, // File name with extension
-      //   fileSize: file.size, // File size in bytes
-      //   mimeType: file.type, // MIME type of the file
-      //   resource: "IMAGE", // Base64 string of the file
-      // });
+  // useEffect – Handle fetcher update
+  useEffect(() => {
+    if (fetcher.state === "submitting") {
+      setIsSaving(true); // start loading
     }
+
+    if (fetcher.state === "idle" && fetcher.data?.metaobject) {
+      const flattenMetaobject = (obj) => {
+        const flat = { id: obj.id };
+        for (const field of obj.fields) {
+          flat[field.key] = field.value;
+        }
+        return flat;
+      };
+
+      setIsSaving(false); // stop loading
+      shopify.toast.show("New Pop Created");
+      navigate("/app", {
+        state: {
+          updatedMetaobject: flattenMetaobject(fetcher.data.metaobject),
+        },
+      });
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  // Callback – File Drop
+
+  const handleDrop = useCallback((_dropFiles, acceptedFiles) => {
+    const file = acceptedFiles[0];
+    if (file) setImage(file);
   }, []);
+
+  // Handler – Reset Fields
+
   const resetFields = () => {
     setAlertStatus("disable");
     setTitle("");
@@ -356,8 +340,19 @@ function AlertPopupSettingsPage() {
     });
   };
 
+  // Handler – Pro Feature Access
+
+  const handleProFeature = (callback) => {
+    if (!hasProPlan) {
+      setShowUpgradeModal(true);
+    } else {
+      callback();
+    }
+  };
+
+  // Handler – Save
+
   const handleSave = async () => {
-    console.log("file", image);
     setIsSaving(true);
     let hasError = false;
     const newErrors = {
@@ -375,11 +370,6 @@ function AlertPopupSettingsPage() {
       newErrors.description = "Description is required";
       hasError = true;
     }
-    // if (selectedProducts.length === 0) {
-    //   newErrors.collections = "Select at least one product.";
-    //   hasError = true;
-    // }
-
     if (countryRestriction === "enable" && selectedCountries.length === 0) {
       newErrors.countries = "Select at least one country";
       hasError = true;
@@ -397,7 +387,6 @@ function AlertPopupSettingsPage() {
     try {
       const payload = {
         handle: alertData?.handle || `alert-${(metaobjects?.length || 0) + 1}`,
-        fileData,
         alertStatus,
         title,
         description,
@@ -416,24 +405,15 @@ function AlertPopupSettingsPage() {
         removeWatermark,
         userOnly,
       };
-      console.log("Sending Payload,", payload);
+
       const formData = new FormData();
-      console.log("Image State", image);
       formData.append("image", image);
-      formData.append("payload", payload);
+      formData.append("payload", JSON.stringify(payload));
 
-      fetcher.submit(
-        // {
-        //   metaobjectId: metaobjects.id,
-        //   payload: JSON.stringify(payload),
-        //   image,
-        // },
-        formData,
-        { method: "POST", encType: "multipart/form-data" },
-      );
-
-      shopify.toast.show("✅ All set! Popup saved without a hitch");
-      navigate("/app");
+      fetcher.submit(formData, {
+        method: "POST",
+        encType: "multipart/form-data",
+      });
     } catch (error) {
       console.error("Error in submitting form:", error);
       shopify.toast.show(
@@ -468,7 +448,7 @@ function AlertPopupSettingsPage() {
               <BlockStack gap="400">
                 <Select
                   label="Popup Status"
-                  options={enableDisableOptions}
+                  options={activeInactiveOptions}
                   value={alertStatus}
                   onChange={setAlertStatus}
                   disabled={isSaving}
@@ -491,13 +471,15 @@ function AlertPopupSettingsPage() {
                   maxLength={300}
                   value={description}
                   onChange={setDescription}
-                  multiline
+                  multiline={true}
                   disabled={isSaving}
+                  maxHeight={3}
                   required
                   error={errors.description}
                   helpText="Describe the message or offer you want to show to your customers."
                 />
-                {showPosition != "maintainance" && (
+                {(showPosition != "maintainance" ||
+                  showPosition != "sitewite") && (
                   <>
                     <TextField
                       label="Primary Button Label"
@@ -518,23 +500,40 @@ function AlertPopupSettingsPage() {
                     />
                   </>
                 )}
-                <DropZone
-                  label="Popup Image"
-                  onDrop={handleDrop}
-                  allowMultiple={false}
-                  disabled={isSaving}
-                >
-                  {!image ? (
+                {image ? (
+                  <InlineStack align="start" blockAlign="center" gap="300">
+                    <Thumbnail
+                      size="large"
+                      alt="Popup"
+                      source={
+                        typeof image === "string"
+                          ? image
+                          : image instanceof File
+                            ? URL.createObjectURL(image)
+                            : ""
+                      }
+                      transparent
+                    />
+                    <Box>
+                      <Button
+                        onClick={() => setImage(null)}
+                        destructive
+                        icon={DeleteIcon}
+                        variant="primary"
+                        tone="critical"
+                      ></Button>
+                    </Box>
+                  </InlineStack>
+                ) : (
+                  <DropZone
+                    label="Popup Image"
+                    onDrop={handleDrop}
+                    allowMultiple={false}
+                    disabled={isSaving}
+                  >
                     <DropZone.FileUpload />
-                  ) : (
-                    <InlineGrid align="center" alignItems="center">
-                      {/* <Thumbnail size="small" alt="Popup" source={image} /> */}
-                      <DropZone.FileUpload />
-
-                      <Text variant="bodyMd">Image Uploaded</Text>
-                    </InlineGrid>
-                  )}
-                </DropZone>
+                  </DropZone>
+                )}
               </BlockStack>
             </Card>
           </Section>
@@ -542,20 +541,19 @@ function AlertPopupSettingsPage() {
           <Divider />
 
           <Section
-            title="Popup Targeting"
-            description="Select when and where your popup should appear, and which products or collections it targets."
+            title="Targeting Rules"
+            description=" Choose when and where your pop-up should appear, and target specific products or collections."
           >
             <Card>
               <BlockStack gap="400">
                 <Select
-                  label="Trigger Event"
+                  label="Show Popup When"
                   options={positionOptions}
                   value={showPosition}
                   disabled={isSaving}
                   onChange={(value) => {
                     if (
-                      value === "closeIntent" &&
-                      value === "productPage" &&
+                      (value === "closeIntent" || value === "productPage") &&
                       !hasProPlan
                     ) {
                       setShowUpgradeModal(true);
@@ -571,7 +569,7 @@ function AlertPopupSettingsPage() {
                   showPosition !== "closeIntent" && (
                     <>
                       <Select
-                        label="Select By"
+                        label="Target By"
                         options={[
                           { label: "Products", value: "products" },
                           { label: "Collections", value: "collections" },
@@ -620,13 +618,19 @@ function AlertPopupSettingsPage() {
 
           <Divider />
           <Section
-            title="Watermark Settings"
-            description="Choose if you want to remove the watermark from the popup image."
+            title="Branding Options"
+            description=" Enable or remove the “Powered by Poppy” watermark from your pop-up."
           >
             <Card>
               <BlockStack gap="400">
-                <Checkbox
-                  label="Remove Watermark"
+              <Box>
+                  <InlineStack align="space-between">
+                    <Label>Set Display Time</Label>
+                    <PremiumBadge />
+                  </InlineStack>
+                 <Box paddingBlockStart={100}>
+                 <Checkbox
+                  label=" Remove “Powered by Poppy” branding"
                   checked={removeWatermark == true}
                   disabled={isSaving}
                   onChange={(checked) => {
@@ -637,25 +641,35 @@ function AlertPopupSettingsPage() {
                     }
                   }}
                 />
+                 </Box>
+                </Box>
+               
               </BlockStack>
             </Card>
           </Section>
           {/* Schedule */}
           <Section
             title="Schedule Popup"
-            description="Set a time window for when the popup should be active."
+            description=" Set a specific time range for when this pop-up should be shown."
           >
             <Card>
               <BlockStack gap="400">
-                <Select
-                  label="Enable Schedule"
-                  disabled={isSaving}
-                  options={enableDisableOptions}
-                  value={scheduleStatus}
-                  onChange={(value) =>
-                    handleProFeature(() => setScheduleStatus(value))
-                  }
-                />
+                <Box>
+                  <InlineStack align="space-between">
+                    <Label>Set Display Time</Label>
+                    <PremiumBadge />
+                  </InlineStack>
+                 <Box paddingBlockStart={200}>
+                 <Select
+                    disabled={isSaving}
+                    options={enableDisableOptions}
+                    value={scheduleStatus}
+                    onChange={(value) =>
+                      handleProFeature(() => setScheduleStatus(value))
+                    }
+                  />
+                 </Box>
+                </Box>
                 {scheduleStatus === "enable" && (
                   <InlineGrid columns={{ xs: "1fr", md: "1fr 1fr" }} gap="400">
                     <DatePickerSingle
@@ -679,12 +693,12 @@ function AlertPopupSettingsPage() {
 
           {/* Customer Filter */}
           <Section
-            title="User Visibility"
-            description="Show popup only to logged-in users."
+            title="Audience Visibility"
+            description=" Choose who sees the pop-up based on login status."
           >
             <Card>
               <Select
-                label="Logged-in Only"
+                label="Limit to Logged-in Users"
                 options={enableDisableOptions}
                 value={userOnly}
                 disabled={isSaving}
@@ -695,13 +709,13 @@ function AlertPopupSettingsPage() {
 
           {/* Country Restriction */}
           <Section
-            title="Geolocation Filter"
-            description="Restrict popup visibility to specific countries."
+            title="Country Targeting"
+            description="Control which countries can see this pop-up."
           >
             <Card>
               <BlockStack gap="400">
                 <Select
-                  label="Enable Country Restriction"
+                  label="Restrict by Country"
                   options={enableDisableOptions}
                   value={countryRestriction}
                   disabled={isSaving}

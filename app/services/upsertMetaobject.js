@@ -110,18 +110,8 @@ const definitionExists = defCheckData.data.metaobjectDefinitionByType;
       console.error("Upsert error:", upsertData.data.metaobjectUpsert.userErrors);
       return { success: false, message: "Upsert failed", error: upsertData.data.metaobjectUpsert.userErrors,  metaobject:[]  };
     }
-    const transformedData = {
-      id: upsertData.data.metaobjectUpsert.metaobject?.id,
-      handle: upsertData.data.metaobjectUpsert.metaobject?.handle,
-      ...Object.fromEntries(
-        upsertData.data.metaobjectUpsert.metaobject?.fields.map(field => [
-          field.key, 
-          field.value.startsWith("[") || field.value.startsWith("{") 
-            ? JSON.parse(field.value) 
-            : field.value
-        ])
-      )
-    };
+  
+    const transformedData = upsertData.data.metaobjectUpsert.metaobject;
     
     console.log("MetaObject upserted successfully:", transformedData);
     return { success: true, metaobject: transformedData };

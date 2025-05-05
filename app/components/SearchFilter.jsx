@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Autocomplete, Icon, Tag, LegacyStack } from '@shopify/polaris';
-import { SearchIcon } from '@shopify/polaris-icons';
+import React, { useState, useCallback, useMemo } from "react";
+import { Autocomplete, Icon, Tag, LegacyStack } from "@shopify/polaris";
+import { SearchIcon } from "@shopify/polaris-icons";
 
 function AutocompleteSelect({
   optionsData,
@@ -10,10 +10,10 @@ function AutocompleteSelect({
   allowMultiple = true,
   preselectedOptions = [],
   disable,
-  error
+  error,
 }) {
   const [selectedOptions, setSelectedOptions] = useState(preselectedOptions);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState(optionsData);
   const [open, setOpen] = useState(false); // NEW: control open/close manually
 
@@ -21,19 +21,19 @@ function AutocompleteSelect({
     (value) => {
       setInputValue(value);
 
-      if (value === '') {
+      if (value === "") {
         setOptions(optionsData);
       } else {
-        const filterRegex = new RegExp(value, 'i');
+        const filterRegex = new RegExp(value, "i");
         const resultOptions = optionsData.filter((option) =>
-          option.label.match(filterRegex)
+          option.label.match(filterRegex),
         );
         setOptions(resultOptions);
       }
 
       setOpen(true); // Always open options when typing
     },
-    [optionsData]
+    [optionsData],
   );
 
   const updateSelection = useCallback(
@@ -42,16 +42,18 @@ function AutocompleteSelect({
 
       if (!allowMultiple) {
         newSelection = selected.slice(-1);
-        const matchedOption = options.find((opt) => opt.value === newSelection[0]);
-        setInputValue(matchedOption?.label || '');
+        const matchedOption = options.find(
+          (opt) => opt.value === newSelection[0],
+        );
+        setInputValue(matchedOption?.label || "");
       } else {
-        setInputValue('');
+        setInputValue("");
       }
 
       setSelectedOptions(newSelection);
       onSelectChange(newSelection);
     },
-    [allowMultiple, options, onSelectChange]
+    [allowMultiple, options, onSelectChange],
   );
 
   const removeTag = useCallback(
@@ -60,20 +62,23 @@ function AutocompleteSelect({
       setSelectedOptions(updated);
       onSelectChange(updated);
     },
-    [selectedOptions, onSelectChange]
+    [selectedOptions, onSelectChange],
   );
 
   const verticalContentMarkup =
     allowMultiple && selectedOptions.length > 0 ? (
       <LegacyStack spacing="extraTight" alignment="center">
-        {selectedOptions.map((value) => {
-          const matchedLabel = optionsData.find((o) => o.value === value)?.label || value;
-          return (
-            <Tag key={value} onRemove={removeTag(value)}>
-              {matchedLabel}
-            </Tag>
-          );
-        })}
+        {Array.isArray(selectedOptions) &&
+          selectedOptions.length > 0 &&
+          selectedOptions.map((value) => {
+            const matchedLabel =
+              optionsData.find((o) => o.value === value)?.label || value;
+            return (
+              <Tag key={value} onRemove={removeTag(value)}>
+                {matchedLabel}
+              </Tag>
+            );
+          })}
       </LegacyStack>
     ) : null;
 
@@ -82,7 +87,7 @@ function AutocompleteSelect({
       onChange={updateText}
       onFocus={() => {
         setOptions(optionsData); // Load all options again
-        setOpen(true);            // NEW: open options when field is focused
+        setOpen(true); // NEW: open options when field is focused
       }}
       label={label}
       value={inputValue}
@@ -102,8 +107,8 @@ function AutocompleteSelect({
       onSelect={updateSelection}
       textField={textField}
       allowMultiple={allowMultiple}
-      open={open}                   // NEW: control open
-      onOpen={() => setOpen(true)}   // NEW: set open true
+      open={open} // NEW: control open
+      onOpen={() => setOpen(true)} // NEW: set open true
       onClose={() => setOpen(false)} // NEW: set open false
     />
   );

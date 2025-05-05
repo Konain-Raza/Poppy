@@ -12,26 +12,19 @@ import {
 } from "@shopify/polaris";
 import { useNavigate } from "@remix-run/react";
 import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
-export default function AlertCard({ onDelete, alert }) {
+
+export default function AlertCard({ onDelete, alert, blur = false }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
 
   const {
     id,
-    handle,
     title,
     description,
-    image,
     alertStatus,
-    primaryText,
-    secondaryText,
-    selectedProducts,
-    selectedCountries,
-    countryRestriction,
-    scheduleStatus,
-    startDate,
-    endDate,
     showPosition,
+    scheduleStatus,
+    countryRestriction,
     userOnly,
   } = alert;
 
@@ -47,75 +40,107 @@ export default function AlertCard({ onDelete, alert }) {
     closeModal();
   };
 
+  const handleUpgrade = () => {
+    navigate("/app/pricing"); // or any route you want
+  };
+
   return (
     <>
-      <Box paddingBlockEnd="400">
-        <Card roundedAbove="sm" padding="400">
-          <BlockStack gap="200">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd" fontWeight="bold">
-                {title}
-              </Text>
-              <InlineStack gap="100">
-                <Badge
-                  tone={alertStatus === "enable" ? "success" : "critical"}
-                  progress="complete"
-                >
-                  {alertStatus === "enable" ? "Active" : "Inactive"}
-                </Badge>
-                <Badge tone="info" progress="complete">
-                  {showPosition === "addToCart"
-                    ? "Add to Cart"
-                    : showPosition === "onVisit"
-                      ? "On Visit"
-                      : showPosition === "checkout"
+      <Box paddingBlockEnd="400" position="relative">
+        <div style={{ position: "relative" }}>
+          {/* Overlay Upgrade Button */}
+          {blur && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 10,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                pointerEvents: "auto",
+              }}
+            >
+              <Button variant="primary" onClick={handleUpgrade}>
+                Upgrade to Unlock
+              </Button>
+            </div>
+          )}
+
+          {/* Blurred Content */}
+          <div
+            style={{
+              filter: blur ? "blur(4px)" : "none",
+              pointerEvents: blur ? "none" : "auto",
+              transition: "filter 0.3s ease",
+            }}
+          >
+            <Card roundedAbove="sm" padding="400">
+              <BlockStack gap="200">
+                <InlineStack align="space-between">
+                  <Text as="h2" variant="headingMd" fontWeight="bold">
+                    {title}
+                  </Text>
+                  <InlineStack gap="100">
+                    <Badge
+                      tone={alertStatus === "Active" ? "success" : "critical"}
+                      progress="complete"
+                    >
+                      {alertStatus === "Active" ? "Active" : "Inactive"}
+                    </Badge>
+                    <Badge tone="info" progress="complete">
+                      {showPosition === "addToCart"
+                        ? "Add to Cart"
+                        : showPosition === "onVisit"
+                        ? "On Visit"
+                        : showPosition === "checkout"
                         ? "Checkout"
                         : showPosition === "tabClose"
-                          ? "Leave"
-                          : showPosition}
-                </Badge>
-                {scheduleStatus === "enable" && (
-                  <Badge tone="success" progress="complete">
-                    Scheduled
-                  </Badge>
-                )}
-                {countryRestriction === "enable" && (
-                  <Badge tone="warning" progress="complete">
-                    Country Locked
-                  </Badge>
-                )}
-                {userOnly === "enable" && (
-                  <Badge tone="info" progress="complete">
-                    User-Only Access
-                  </Badge>
-                )}
-              </InlineStack>
-            </InlineStack>
+                        ? "Leave"
+                        : showPosition}
+                    </Badge>
+                    {scheduleStatus === "enable" && (
+                      <Badge tone="success" progress="complete">
+                        Scheduled
+                      </Badge>
+                    )}
+                    {countryRestriction === "enable" && (
+                      <Badge tone="warning" progress="complete">
+                        Country Locked
+                      </Badge>
+                    )}
+                    {userOnly === "enable" && (
+                      <Badge tone="info" progress="complete">
+                        User-Only Access
+                      </Badge>
+                    )}
+                  </InlineStack>
+                </InlineStack>
 
-            <Text as="p">{description}</Text>
+                <Text as="p">{description}</Text>
 
-            {/* Actions */}
-            <InlineStack align="end">
-              <ButtonGroup>
-                <Button
-                  variant="secondary"
-                  tone="critical"
-                  icon={DeleteIcon}
-                  onClick={openModal}
-                  style={{ backgroundColor: "#f44336", color: "#fff" }}
-                >
-                  Delete
-                </Button>
-                <Button variant="primary" icon={EditIcon} onClick={handleEdit}>
-                  Edit
-                </Button>
-              </ButtonGroup>
-            </InlineStack>
-          </BlockStack>
-        </Card>
+                <InlineStack align="end">
+                  <ButtonGroup>
+                    <Button
+                      variant="secondary"
+                      tone="critical"
+                      icon={DeleteIcon}
+                      onClick={openModal}
+                      style={{ backgroundColor: "#f44336", color: "#fff" }}
+                    >
+                      Delete
+                    </Button>
+                    <Button variant="primary" icon={EditIcon} onClick={handleEdit}>
+                      Edit
+                    </Button>
+                  </ButtonGroup>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </div>
+        </div>
       </Box>
 
-      {/* 🧾 Delete Confirmation Modal */}
       <Modal
         open={showModal}
         onClose={closeModal}
@@ -125,12 +150,7 @@ export default function AlertCard({ onDelete, alert }) {
           destructive: true,
           onAction: handleConfirmDelete,
         }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: closeModal,
-          },
-        ]}
+        secondaryActions={[{ content: "Cancel", onAction: closeModal }]}
       >
         <Modal.Section>
           <Text as="p">

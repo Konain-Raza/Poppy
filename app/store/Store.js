@@ -6,9 +6,12 @@ const useAppStore = create((set) => ({
   popups: [],
   metaobjects: [],
   collections: [],
-  shop: "",
+  shop: {},
   plan:{},
-  // Setters
+  appEmbed:false,
+  theme: "",
+  setTheme:(theme)=> set({theme}),
+  setAppEmbed:(appEmbed)=> set({appEmbed}),
   setPlan: (plan) => set({ plan }),
 
   setProducts: (products) => set({ products }),

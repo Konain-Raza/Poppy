@@ -7,52 +7,56 @@ import { authenticate } from "../shopify.server";
 import en from "@shopify/polaris/locales/en.json";
 import { json } from "@remix-run/node";
 import useAppStore from "../store/Store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "@shopify/polaris";
+import BannerModal from "../components/BannerModal";
+import checkAppEmbedStatus from "../services/checkAppEmbedStatus";
+import SupportPopover from "../components/Popover";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
   const { billing, admin } = await authenticate.admin(request);
   const plan = await billing.check();
+  const { themeId, isEnabled } = await checkAppEmbedStatus(admin);
   const type = "alertium-by-konain-bhai";
 
   const queryResponse = await admin.graphql(`
-    {
-      shop {
-        name
-        shopOwnerName
-      }
-      products(first: 200) {
-        edges {
-          node {
-            id
-            title
+      {
+        shop {
+          name
+          shopOwnerName
+        }
+        products(first: 200) {
+          edges {
+            node {
+              id
+              title
+            }
           }
         }
-      }
-      collections(first: 250) {
-        edges {
-          node {
-            id
-            title
+        collections(first: 250) {
+          edges {
+            node {
+              id
+              title
+            }
           }
         }
-      }
-      metaobjects(type: "${type}", first: 250) {
-        edges {
-          node {
-            id
-            handle
-            displayName
-            fields {
-              key
-              jsonValue
+        metaobjects(type: "${type}", first: 250) {
+          edges {
+            node {
+              id
+              handle
+              displayName
+              fields {
+                key
+                jsonValue
+              }
             }
           }
         }
       }
-    }
-  `);
+    `);
 
   const queryData = await queryResponse.json();
 
@@ -66,7 +70,7 @@ export const loader = async ({ request }) => {
     title: node.title,
   }));
 
-  const shop = queryData.data?.shop?.shopOwnerName || "";
+  const shop = queryData.data?.shop || "";
 
   const metaobjects = queryData.data.metaobjects.edges.map(({ node }) => {
     const fields = Object.fromEntries(
@@ -88,36 +92,74 @@ export const loader = async ({ request }) => {
     collections,
     metaobjects,
     shop,
+    themeId,
+    appEmbedStatus: isEnabled,
     apiKey,
     plan,
   });
 };
 
 export default function App() {
-  const { setProducts, setMetaobjects, setCollections, setShop, setPlan } =
-    useAppStore();
-  const { products, collections, metaobjects, shop, apiKey, plan } = useLoaderData();
-console.log(metaobjects)
+  const {
+    setProducts,
+    setMetaobjects,
+    setCollections,
+    setShop,
+    setPlan,
+    setAppEmbed,
+    setTheme,
+  } = useAppStore();
+  const {
+    products,
+    collections,
+    metaobjects,
+    shop,
+    apiKey,
+    plan,
+    appEmbedStatus,
+    themeId,
+  } = useLoaderData();
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
+    setAppEmbed(appEmbedStatus);
+    setShowModal(!appEmbedStatus);
+    setTheme(themeId);
     setProducts(products);
     setMetaobjects(metaobjects);
     setCollections(collections);
     setShop(shop);
-    setPlan(plan)
-    
+    setPlan(plan);
   }, [apiKey]);
+  const previewTheme = () => {
+    const themeEditorId = themeId.split("/").pop();
+    const shopName = shop?.name;
+    console.log(shop, shopName);
+    console.log(themeId);
+    const extensionId = "246aa213-aa58-4398-af2b-c884b7c494d8";
+    const extensionName = "poppy-popup";
+    const editorUrl = `https://admin.shopify.com/store/${shopName}/themes/${themeEditorId}/editor?context=apps&template=index&activateAppId=${extensionId}/${extensionName}`;
+    window.open(editorUrl, "_blank");
+  };
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={en}>
       <NavMenu>
         <Link to="/app" rel="home">
-          Poppy
+          Popup Disclaimer
         </Link>
-        <Link to="/app/settings">Settings</Link>
         <Link to="/app/pricing">Pricing</Link>
       </NavMenu>
       <Outlet />
+     <SupportPopover/>
+      <BannerModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onPrimary={() => {
+          previewTheme();
+          setShowModal(false);
+        }}
+      />
     </AppProvider>
   );
 }
