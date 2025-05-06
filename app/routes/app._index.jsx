@@ -157,7 +157,7 @@ export default function Index() {
         pointerEvents: "auto", // allow click
       }}
     >
-      <Button  icon={LockIcon} size="large" onClick={() => navigate("/app/upgrade")}>
+      <Button  icon={LockIcon} size="large" onClick={() => navigate("/app/pricing")}>
         Upgrade to Unlock
       </Button>
     </div>

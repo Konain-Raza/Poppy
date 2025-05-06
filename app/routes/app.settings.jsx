@@ -231,6 +231,7 @@ function AlertPopupSettingsPage() {
       setPrimaryText(alertData.primaryText || "");
       setSecondaryText(alertData.secondaryText || "");
       setSelectedProducts(alertData.selectedProducts || []);
+
       setCountryRestriction(alertData.countryRestriction || "disable");
       setSelectedCountries(alertData.selectedCountries || []);
       setScheduleStatus(alertData.scheduleStatus || "disable");
@@ -590,7 +591,7 @@ function AlertPopupSettingsPage() {
                             setSelectedCollections([]); // Clear selected collections
                           }}
                           error={errors.products}
-                          preselectedOptions={alertData?.selectedProducts || []}
+                          preselectedOptions={selectedProducts || []}
                           disable={isSaving}
                         />
                       ) : (
@@ -605,7 +606,7 @@ function AlertPopupSettingsPage() {
                           }}
                           error={errors.collections}
                           preselectedOptions={
-                            alertData?.selectedCollections || []
+                            selectedCollections || []
                           }
                           disable={isSaving}
                         />

@@ -24,169 +24,183 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    handleShopifyAlertModal();
+    handleShopifyAlertModals();
   });
 
-  function handleShopifyAlertModal() {
-    console.log("Poppy is Running in page ");
-    document.getElementById('closeModalBtn').addEventListener('click', function() {
-    document.getElementById('shopifyAlertModal').style.display = 'none';
-});
+  function handleShopifyAlertModals() {
+    console.log("🔄 Poppy is Running");
 
-    const currentProductId = "gid://shopify/Product/{{ product.id }}";
+    const currentProduct = {{ product |  json}};
+    const currentCollections = {{ product.collections |  json}};
+    console.log(currentProduct)
     const currentUser = "{{ customer }}";
-    const country =" {{localization.country.iso_code}}";
-    let matchingMetaobject, selectedProducts, metaobjectData;
-
-    // Find matching metaobject
-    {% for metaobject in metaobjects['alertium-by-konain-bhai'].values %}
-       selectedProducts = {{ metaobject.selectedProducts }};
-       metaobjectData = {{ metaobject | json }};
-
-      if (selectedProducts.includes(currentProductId) && metaobjectData.alertStatus === "enable") {
-        matchingMetaobject = metaobjectData;
-      }
-    {% endfor %}
-    if (sessionStorage.getItem('poppyAlertDismissed') === 'true') {
-      console.debug("Alert already dismissed, skipping modal.");
-      return;
-    }
-
-    if (!matchingMetaobject) {
-      console.debug("No matching metaobject found for this product.");
-      return;
-    }
-
-    // Check if the alertStatus is enabled and userOnly is disabled or if the current customer matches
-    if (matchingMetaobject.alertStatus !== "enable") {
-      console.debug("Alert is not enabled.");
-      return;
-    }
-
-    if (matchingMetaobject.countryRestriction === "enable" && !matchingMetaobject.selectedCountries.includes(country)) {
-  console.debug("User's country is not allowed. Skipping...");
-  return; // Exit the function if the country is not allowed
-}
-
-    // Check if userOnly is enabled and customer is not logged in
-    if (matchingMetaobject.userOnly === "enable" && !currentUser) {
-      console.debug("Alert is for registered users only, and no customer is logged in.");
-      return;
-    }
-
-    // Schedule date check (if scheduleStatus is enabled)
-    if (matchingMetaobject.scheduleStatus === "enable") {
-      const currentDate = new Date();
-      const startDate = new Date(matchingMetaobject.startDate);
-      const endDate = new Date(matchingMetaobject.endDate);
-
-      if (currentDate < startDate || currentDate > endDate) {
-        console.debug("Current date is outside the schedule date range.");
-        return;
-      }
-    }
-    console.debug("🟡 Matching Metaobject Found:", matchingMetaobject);
-
+    const country = "{{ localization.country.iso_code }}";
     const modal = document.getElementById('shopifyAlertModal');
     const primaryBtn = document.getElementById('alertPrimaryBtn');
     const secondaryBtn = document.getElementById('alertSecondaryBtn');
-    const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+    const dontShowAgain = document.getElementById('dontShowAgain');
+    const closeBtn = document.getElementById('closeModalBtn');
 
-    // Set modal content
-    document.getElementById('alertTitle').textContent = matchingMetaobject.title || "Notice";
-    document.getElementById('alertDescription').textContent = matchingMetaobject.description || "";
-    primaryBtn.textContent = matchingMetaobject.primaryText || "OK";
-    secondaryBtn.textContent = matchingMetaobject.secondaryText || "Cancel";
-
-    let interceptedAction = null;
-
-    primaryBtn.onclick = () => {
-      if (dontShowAgainCheckbox.checked) {
-        sessionStorage.setItem('poppyAlertDismissed', 'true');
-      }
-      modal.style.display = "none";
-
-      if (interceptedAction === "addToCart") {
-        const form = document.querySelector('form[action^="/cart/add"]');
-        if (form) {
-          console.debug("Submitting Add to Cart form.");
-          form.submit();
-        }
-      } else if (interceptedAction === "checkout") {
-        const checkoutForm = document.querySelector('.shopify-payment-button__button');
-        if (checkoutForm) {
-          console.debug("Submitting Checkout form.");
-          // checkoutForm.click();
-          window.location.href = "/checkout"
-        }
-      }
-    };
-
-    secondaryBtn.onclick = () => {
-      modal.style.display = "none";
-      if(showPosition==="onVisit"){
-        window.location.href = "/";
-      }
-      console.debug("Modal dismissed.");
-    };
-
-    const showPosition = matchingMetaobject.showPosition;
-
-    if (showPosition === "tabClose") {
-  window.addEventListener('beforeunload', function (e) {
-    e.preventDefault(); // For some browsers
-    e.returnValue = true;
-  });
-}
-
-
-    
-    if (showPosition === "onVisit") {
-      modal.style.display = "flex"; // Show the modal on page load
-      console.debug("Modal displayed on website visit.");
+    if (!modal || !closeBtn) {
+      console.debug("⚠️ Modal or close button not found.");
+      return;
     }
-    // 🛒 Intercept Add to Cart
-    if (showPosition === "addToCart") {
-      const addBtn = document.querySelector('[name="add"]');
-      if (addBtn) {
-        const clonedAddBtn = addBtn.cloneNode(true);
-        addBtn.parentNode.replaceChild(clonedAddBtn, addBtn);
-        clonedAddBtn.addEventListener('click', function (event) {
-          event.preventDefault();
-          interceptedAction = "addToCart";
-          console.debug("Intercepted Add to Cart click.");
-          modal.style.display = "flex";
+
+    const allMetaobjects = [];
+    {% for metaobject in metaobjects['alertium-by-konain-bhai'].values %}
+      {% if metaobject.alertStatus == "Active" %}
+        allMetaobjects.push({{ metaobject | json }});
+      {% endif %}
+    {% endfor %}
+
+    console.log("🟡 Loaded Active Metaobjects:", allMetaobjects);
+
+    // Loop over each active metaobject and attach behavior
+    allMetaobjects.forEach(meta => {
+      // Country check
+      if (meta.countryRestriction === "enable" && !meta.selectedCountries.includes(country)) return;
+      // User check
+      if (meta.userOnly === "enable" && !currentUser) return;
+      // Schedule check
+      if (meta.scheduleStatus === "enable") {
+        const now = new Date();
+        const start = new Date(meta.startDate);
+        const end = new Date(meta.endDate);
+        if (now < start || now > end) return;
+      }
+
+      const showPosition = meta.showPosition;
+// Ensure both selectedCollections and currentProduct.collections have comparable IDs
+const selectedCollectionIds = (
+  Array.isArray(meta.selectedCollections) && meta.selectedCollections.length > 0
+) ? meta.selectedCollections.map(collectionGid => {
+  return collectionGid.split('/').pop(); // Extract the collection ID from the GID
+}) : [];
+
+
+console.log("selectedCollectionIds:", selectedCollectionIds);
+
+// Evaluate the condition and store it in a single variable
+const isProductOrCollectionMatch = (
+  (meta.selectBy === "products" && meta.selectedProducts.includes(currentProduct?.id)) ||
+  (meta.selectBy === "collections" && Array.isArray(currentCollections) && currentCollections.length > 0 && currentCollections.some(collection => {
+    const collectionId = collection.id.toString(); // Convert collection.id to string for comparison
+    console.log("Checking Collection Match:", collectionId, selectedCollectionIds);
+    return selectedCollectionIds.includes(collectionId); // Compare the IDs
+  }))
+);
+
+console.log(isProductOrCollectionMatch, "condition");
+
+
+// Use the result for further actions
+
+
+      // Attach based on showPosition
+      if ( showPosition === "sitewite" || showPosition === "maintainance") {
+        displayModal(meta);
+      }
+
+      if (showPosition === "closeInthdfhdfhent") {
+        window.addEventListener('beforeunload', function (e) {
+          e.preventDefault();
+          e.returnValue = '';
+          displayModal(meta);
         });
       }
-    }
+      if (showPosition === "closeIntent") {
+        window.addEventListener('beforeunload', function (e) {
+          e.preventDefault();
+          e.returnValue = '';
+          displayModal(meta);
+        });
+      }
 
-    // 💳 Intercept Checkout
-    if (showPosition === "checkout") {
-      const checkoutSelectors = [
-        'button[name="checkout"]',
-        'input[name="checkout"]',
-        'button[name="direct_checkout"]',
-        'button[data-shopify-buy-now-button]',
-        '.shopify-payment-button__button'
-      ];
-
-      checkoutSelectors.forEach(selector => {
-        const checkoutBtn = document.querySelector(selector);
-        if (checkoutBtn) {
-          const clonedCheckoutBtn = checkoutBtn.cloneNode(true);
-          checkoutBtn.parentNode.replaceChild(clonedCheckoutBtn, checkoutBtn);
-          clonedCheckoutBtn.addEventListener('click', function (event) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            interceptedAction = "checkout";
-            console.debug(`Intercepted Checkout click on: ${selector}`);
-            modal.style.display = "flex";
-          });
-        }
+      if (showPosition === "addToCart") {
+  if (isProductOrCollectionMatch) {
+    const addBtn = document.querySelector('[name="add"]');
+    if (addBtn) {
+      const clone = addBtn.cloneNode(true);
+      addBtn.parentNode.replaceChild(clone, addBtn);
+      clone.addEventListener('click', function (e) {
+        e.preventDefault();
+        interceptedAction = "addToCart";
+        displayModal(meta);
       });
     }
   }
+}
+
+if (showPosition === "productPage") {
+  if (isProductOrCollectionMatch) {
+  
+        displayModal(meta);
+ 
+  }
+}
+if (showPosition === "buynow") {
+  const checkoutSelectors = [
+    'button[name="checkout"]',
+    'input[name="checkout"]',
+    'button[name="direct_checkout"]',
+    'button[data-shopify-buy-now-button]',
+    '.shopify-payment-button__button'
+  ];
+
+
+if (isProductOrCollectionMatch) {
+    // Iterate over checkout selectors and apply the modal logic
+    checkoutSelectors.forEach(selector => {
+      const btn = document.querySelector(selector);
+      if (btn) {
+        const clone = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clone, btn);
+        clone.addEventListener('click', function (e) {
+          e.preventDefault();
+          interceptedAction = "checkout";
+          displayModal(meta); // Display the modal when checkout is intercepted
+        });
+      }
+    });
+  }
+}
+
+    });
+
+    let interceptedAction = null;
+
+    function displayModal(meta) {
+      console.log("📢 Showing modal:", meta.title);
+      modal.style.display = "flex";
+      document.getElementById('alertTitle').textContent = meta.title || "Notice";
+      document.getElementById('alertDescription').textContent = meta.description || "";
+      primaryBtn.textContent = meta.primaryText || "OK";
+      secondaryBtn.textContent = meta.secondaryText || "Cancel";
+
+      primaryBtn.onclick = () => {
+        if (dontShowAgain?.checked) {
+          sessionStorage.setItem('poppyAlertDismissed', 'true');
+        }
+        modal.style.display = "none";
+        if (interceptedAction === "addToCart") {
+          const form = document.querySelector('form[action^="/cart/add"]');
+          if (form) form.submit();
+        }
+        if (interceptedAction === "checkout") {
+          window.location.href = "/checkout";
+        }
+      };
+
+      secondaryBtn.onclick = () => {
+        modal.style.display = "none";
+        if (meta.showPosition === "onVisit") {
+          window.location.href = "/";
+        }
+      };
+    }
+  }
 </script>
+
 
 
 
