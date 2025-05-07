@@ -130,6 +130,7 @@ export default function App() {
     setCollections(collections);
     setShop(shop);
     setPlan(plan);
+    console.log(plan)
   }, [apiKey]);
   const previewTheme = () => {
     const themeEditorId = themeId.split("/").pop();

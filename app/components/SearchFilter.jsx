@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Autocomplete, Icon, Tag, LegacyStack } from "@shopify/polaris";
 import { SearchIcon } from "@shopify/polaris-icons";
 
@@ -8,15 +8,19 @@ function AutocompleteSelect({
   placeholder,
   onSelectChange,
   allowMultiple = true,
-  preselectedOptions = [],
+  preselectedOptions,
   disable,
   error,
 }) {
-  const [selectedOptions, setSelectedOptions] = useState(preselectedOptions);
+  console.log("Preselected", preselectedOptions)
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState(optionsData);
   const [open, setOpen] = useState(false); // NEW: control open/close manually
 
+  useEffect(()=>{
+setSelectedOptions(preselectedOptions)
+  },[preselectedOptions])
   const updateText = useCallback(
     (value) => {
       setInputValue(value);

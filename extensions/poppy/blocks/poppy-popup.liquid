@@ -1,17 +1,19 @@
 <div id="shopifyAlertModal" class="modal-overlay">
   <div class="alert-modal-content">
-    <button id="closeModalBtn" class="close-btn">&times;</button>
+    <img id="alertImage" src="" alt="Alert Image" style="max-width: 100%; height: auto; display: none;" width="100" height="100"/>
     <h2 id="alertTitle"></h2>
     <p id="alertDescription"></p>
-    <label for="dontShowAgain">
+    <label for="dontShowAgain" id="dontShowAgainWrapper">
       <input type="checkbox" id="dontShowAgain" /> Don't show this again
     </label>
     <div class="alert-modal-actions">
       <button id="alertSecondaryBtn" class="secondary-btn">Cancel</button>
       <button id="alertPrimaryBtn" class="primary-btn">OK</button>
     </div>
+    <div id="watermark" class="watermark">Powered by Poppy</div>
   </div>
 </div>
+
 
 <style>
   :root {
@@ -29,6 +31,13 @@
 
   function handleShopifyAlertModals() {
     console.log("🔄 Poppy is Running");
+    const billingMetaobject = {{ metaobjects['poppy-billing'].values | json }};
+    console.log(billingMetaobject);
+      
+    const planType = !billingMetaobject ? 'free' : billingMetaobject[0].plan;
+
+console.log(planType);
+
 
     const currentProduct = {{ product |  json}};
     const currentCollections = {{ product.collections |  json}};
@@ -39,9 +48,8 @@
     const primaryBtn = document.getElementById('alertPrimaryBtn');
     const secondaryBtn = document.getElementById('alertSecondaryBtn');
     const dontShowAgain = document.getElementById('dontShowAgain');
-    const closeBtn = document.getElementById('closeModalBtn');
 
-    if (!modal || !closeBtn) {
+    if (!modal) {
       console.debug("⚠️ Modal or close button not found.");
       return;
     }
@@ -56,68 +64,79 @@
     console.log("🟡 Loaded Active Metaobjects:", allMetaobjects);
 
     // Loop over each active metaobject and attach behavior
-    allMetaobjects.forEach(meta => {
-      // Country check
-      if (meta.countryRestriction === "enable" && !meta.selectedCountries.includes(country)) return;
-      // User check
-      if (meta.userOnly === "enable" && !currentUser) return;
-      // Schedule check
-      if (meta.scheduleStatus === "enable") {
-        const now = new Date();
-        const start = new Date(meta.startDate);
-        const end = new Date(meta.endDate);
-        if (now < start || now > end) return;
-      }
+    let maintainanceShown = false;
 
-      const showPosition = meta.showPosition;
-// Ensure both selectedCollections and currentProduct.collections have comparable IDs
-const selectedCollectionIds = (
-  Array.isArray(meta.selectedCollections) && meta.selectedCollections.length > 0
-) ? meta.selectedCollections.map(collectionGid => {
-  return collectionGid.split('/').pop(); // Extract the collection ID from the GID
-}) : [];
+allMetaobjects.forEach(meta => {
+  // Country check
+  if (meta.countryRestriction === "enable" && !meta.selectedCountries.includes(country)) return;
 
+  // User check
+  if (meta.userOnly === "enable" && !currentUser) return;
 
-console.log("selectedCollectionIds:", selectedCollectionIds);
+  // Schedule check
+  if (meta.scheduleStatus === "enable" && planType === "pro") {
+    const now = new Date();
+    const start = new Date(meta.startDate);
+    const end = new Date(meta.endDate);
+    if (now < start || now > end) return;
+  }
+  console.log("Alert:", meta)
 
-// Evaluate the condition and store it in a single variable
-const isProductOrCollectionMatch = (
-  (meta.selectBy === "products" && meta.selectedProducts.includes(currentProduct?.id)) ||
-  (meta.selectBy === "collections" && Array.isArray(currentCollections) && currentCollections.length > 0 && currentCollections.some(collection => {
-    const collectionId = collection.id.toString(); // Convert collection.id to string for comparison
-    console.log("Checking Collection Match:", collectionId, selectedCollectionIds);
-    return selectedCollectionIds.includes(collectionId); // Compare the IDs
-  }))
-);
+  const showPosition = meta.showPosition;
+  const popupImage = meta.popupImage;
 
-console.log(isProductOrCollectionMatch, "condition");
+  // Ensure both selectedCollections and currentProduct.collections have comparable IDs
+  const selectedCollectionIds = (
+    Array.isArray(meta.selectedCollections) && meta.selectedCollections.length > 0
+  ) ? meta.selectedCollections.map(collectionGid => {
+    return collectionGid.split('/').pop(); // Extract the collection ID from the GID
+  }) : [];
 
+  // Evaluate product and collection matching condition
+  const isProductOrCollectionMatch = (
+    (meta.selectBy === "products" && meta.selectedProducts.includes(currentProduct?.id)) ||
+    (meta.selectBy === "collections" && Array.isArray(currentCollections) && currentCollections.length > 0 && currentCollections.some(collection => {
+      const collectionId = collection.id.toString(); // Convert collection.id to string for comparison
+      return selectedCollectionIds.includes(collectionId); // Compare the IDs
+    }))
+  );
 
-// Use the result for further actions
+  // Show modal based on conditions
 
+  // Show maintenance modal first (priority)
+  if (showPosition === "maintainance" && !maintainanceShown) {
+    displayModal(meta);
+    maintainanceShown = true;
+    console.log("📢 Showing maintenance modal");
+    return; // Exit loop after showing the "maintainance" modal
+  }
 
-      // Attach based on showPosition
-      if ( showPosition === "sitewite" || showPosition === "maintainance") {
+  // Show sitewite modal if maintenance hasn't been shown and sitewite is available
+  if (showPosition === "sitewite" && !maintainanceShown ) {
+    console.log("📢 Showing sitewide modal");
+    displayModal(meta);
+
+    return; // Exit loop after showing the "sitewite" modal
+  }
+
+  // Show close intent modal when the user is about to leave the page
+  if (showPosition === "closeIntent" && planType === "pro" ) {
+    
+    document.addEventListener('mouseout', function (event) {
+      // Check if the mouse is leaving the window
+      if (event.relatedTarget === null) {
+        console.log('Mouse has left the window or document area!');
+        // Your custom logic here
         displayModal(meta);
       }
+    });
+    
+    return;
+  }
+  
 
-      if (showPosition === "closeInthdfhdfhent") {
-        window.addEventListener('beforeunload', function (e) {
-          e.preventDefault();
-          e.returnValue = '';
-          displayModal(meta);
-        });
-      }
-      if (showPosition === "closeIntent") {
-        window.addEventListener('beforeunload', function (e) {
-          e.preventDefault();
-          e.returnValue = '';
-          displayModal(meta);
-        });
-      }
-
-      if (showPosition === "addToCart") {
-  if (isProductOrCollectionMatch) {
+  // Show modal when user clicks "Add to Cart" button
+  if (showPosition === "addToCart" && isProductOrCollectionMatch) {
     const addBtn = document.querySelector('[name="add"]');
     if (addBtn) {
       const clone = addBtn.cloneNode(true);
@@ -126,30 +145,27 @@ console.log(isProductOrCollectionMatch, "condition");
         e.preventDefault();
         interceptedAction = "addToCart";
         displayModal(meta);
+        console.log("📢 Showing add-to-cart modal");
       });
     }
   }
-}
 
-if (showPosition === "productPage") {
-  if (isProductOrCollectionMatch) {
-  
-        displayModal(meta);
- 
+  // Show modal when product page is loaded
+  if (showPosition === "productPage" && isProductOrCollectionMatch && planType === "pro") {
+    displayModal(meta);
+    console.log("📢 Showing product page modal");
   }
-}
-if (showPosition === "buynow") {
-  const checkoutSelectors = [
-    'button[name="checkout"]',
-    'input[name="checkout"]',
-    'button[name="direct_checkout"]',
-    'button[data-shopify-buy-now-button]',
-    '.shopify-payment-button__button'
-  ];
 
+  // Show modal when Buy Now button is clicked
+  if (showPosition === "buynow" && isProductOrCollectionMatch) {
+    const checkoutSelectors = [
+      'button[name="checkout"]',
+      'input[name="checkout"]',
+      'button[name="direct_checkout"]',
+      'button[data-shopify-buy-now-button]',
+      '.shopify-payment-button__button'
+    ];
 
-if (isProductOrCollectionMatch) {
-    // Iterate over checkout selectors and apply the modal logic
     checkoutSelectors.forEach(selector => {
       const btn = document.querySelector(selector);
       if (btn) {
@@ -159,24 +175,42 @@ if (isProductOrCollectionMatch) {
           e.preventDefault();
           interceptedAction = "checkout";
           displayModal(meta); // Display the modal when checkout is intercepted
+          console.log("📢 Showing buy now modal");
         });
       }
     });
   }
-}
-
-    });
+});
 
     let interceptedAction = null;
 
     function displayModal(meta) {
       console.log("📢 Showing modal:", meta.title);
       modal.style.display = "flex";
+
       document.getElementById('alertTitle').textContent = meta.title || "Notice";
       document.getElementById('alertDescription').textContent = meta.description || "";
       primaryBtn.textContent = meta.primaryText || "OK";
       secondaryBtn.textContent = meta.secondaryText || "Cancel";
+      const modalImage = document.getElementById("alertImage");
+      const doNotShowAgain = document.getElementById("dontShowAgainWrapper")
+      if (meta.image) {
+    modalImage.src = meta.image; // Set the image source dynamically
+    modalImage.style.display = "block"; // Show the image
+  } else {
+    modalImage.style.display = "none"; // Hide the image if not available
+  }
+  const watermark = document.getElementById("watermark");
+  if(meta.removeWatermark == "true" && planType !== "pro"){
+    watermark.style.display = "block"; 
 
+  }
+  if(meta.showPosition === "maintainance"){
+    doNotShowAgain.style.display = "none"
+    primaryBtn.style.display = "none";
+    secondaryBtn.style.display = "none"
+
+  }
       primaryBtn.onclick = () => {
         if (dontShowAgain?.checked) {
           sessionStorage.setItem('poppyAlertDismissed', 'true');

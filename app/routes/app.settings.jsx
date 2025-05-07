@@ -245,31 +245,37 @@ function AlertPopupSettingsPage() {
     }
   }, [alertData]);
 
-  // useEffect – Update products/collections/options
-
   useEffect(() => {
-    const allSelected = metaobjects
-      ?.flatMap((obj) => obj.selectedProducts || [])
-      .filter((id) => !alertData?.selectedProducts?.includes(id));
-
+    // Collect all selected products and collections across all metaobjects
+    const allSelectedProducts = metaobjects?.flatMap((obj) => obj.selectedProducts || []);
+    const allSelectedCollections = metaobjects?.flatMap((obj) => obj.selectedCollections || []);
+  
+    // Combine already selected products and collections into a unique list
+    const uniqueSelectedProducts = [...new Set(allSelectedProducts)];
+    const uniqueSelectedCollections = [...new Set(allSelectedCollections)];
+  
+    // Filter products: remove already selected products
     const filteredProducts =
       products?.length > 0
         ? products
-            .filter((product) => !allSelected.includes(product.id))
+            .filter((product) => !uniqueSelectedProducts.includes(product.id)) // Filter out selected products
             .map((product) => ({
               label: product.title,
               value: product.id,
             }))
         : [];
-
+  
+    // Filter collections: remove already selected collections
     const filteredCollections =
       collections?.length > 0
-        ? collections.map((collection) => ({
-            label: collection.title,
-            value: collection.id,
-          }))
+        ? collections
+            .filter((collection) => !uniqueSelectedCollections.includes(collection.id)) // Filter out selected collections
+            .map((collection) => ({
+              label: collection.title,
+              value: collection.id,
+            }))
         : [];
-
+  
     const metaobjectPositions = metaobjects?.map((obj) => obj.showPosition);
     const filteredOptions = positionOptions.filter((option) => {
       if (alertData?.showPosition === option.value) return true;
@@ -278,11 +284,15 @@ function AlertPopupSettingsPage() {
         !metaobjectPositions.includes(option.value)
       );
     });
-
+  
     setPositionOptions(filteredOptions);
     setAllProducts(filteredProducts);
     setAllCollections(filteredCollections);
-  }, [products, metaobjects, alertData]);
+  
+    console.log("filteredCollections", filteredCollections);
+  }, [navigate, metaobjects, products, collections, positionOptions, alertData]);
+  
+  
 
   // useEffect – Handle fetcher update
   useEffect(() => {
@@ -352,6 +362,7 @@ function AlertPopupSettingsPage() {
   };
 
   // Handler – Save
+  console.log("selectedCollections", selectedCollections)
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -426,6 +437,7 @@ function AlertPopupSettingsPage() {
     }
   };
 
+
   return (
     <Page
       backAction={{ content: "Back to Dashboard", url: "/app" }}
@@ -479,8 +491,7 @@ function AlertPopupSettingsPage() {
                   error={errors.description}
                   helpText="Describe the message or offer you want to show to your customers."
                 />
-                {(showPosition != "maintainance" ||
-                  showPosition != "sitewite") && (
+                {showPosition != "maintainance" && 
                   <>
                     <TextField
                       label="Primary Button Label"
@@ -500,7 +511,7 @@ function AlertPopupSettingsPage() {
                       helpText="Optional secondary action (e.g., 'No thanks', 'Dismiss')."
                     />
                   </>
-                )}
+                }
                 {image ? (
                   <InlineStack align="start" blockAlign="center" gap="300">
                     <Thumbnail
@@ -606,7 +617,7 @@ function AlertPopupSettingsPage() {
                           }}
                           error={errors.collections}
                           preselectedOptions={
-                            selectedCollections || []
+                           selectedCollections || []
                           }
                           disable={isSaving}
                         />
