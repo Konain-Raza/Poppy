@@ -160,7 +160,7 @@ export const action = async ({ request }) => {
     console.log("🏁 Billing already active or just activated, redirecting...");
     await updateBillingMetaobject(admin, "pro");
     console.log("📝 Updated billing metaobject to 'free'");
-    return redirect("/app/pricing"); // ✅ Proper redirect
+    return redirect("/app"); // ✅ Proper redirect
   }
 
   console.log("❌ Plan not recognized, fallback...");

@@ -140,8 +140,7 @@ function AlertPopupSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fetcher = useFetcher();
-  const { products, metaobjects, collections, plan, setMetaobjects } =
-    useAppStore();
+  const { products, metaobjects, collections, plan } = useAppStore();
   const alertData = location.state?.alert;
 
   // Plan Values
@@ -230,7 +229,6 @@ function AlertPopupSettingsPage() {
       setImage(alertData.image || null);
       setPrimaryText(alertData.primaryText || "");
       setSecondaryText(alertData.secondaryText || "");
-      setSelectedProducts(alertData.selectedProducts || []);
 
       setCountryRestriction(alertData.countryRestriction || "disable");
       setSelectedCountries(alertData.selectedCountries || []);
@@ -242,40 +240,83 @@ function AlertPopupSettingsPage() {
       setSelectBy(alertData.selectBy || "products");
       setRemoveWatermark(alertData.removeWatermark || false);
       setSelectedCollections(alertData.selectedCollections || []);
+      setSelectedProducts(alertData.selectedProducts || []);
     }
   }, [alertData]);
 
   useEffect(() => {
-    // Collect all selected products and collections across all metaobjects
-    const allSelectedProducts = metaobjects?.flatMap((obj) => obj.selectedProducts || []);
-    const allSelectedCollections = metaobjects?.flatMap((obj) => obj.selectedCollections || []);
-  
-    // Combine already selected products and collections into a unique list
-    const uniqueSelectedProducts = [...new Set(allSelectedProducts)];
-    const uniqueSelectedCollections = [...new Set(allSelectedCollections)];
-  
-    // Filter products: remove already selected products
-    const filteredProducts =
-      products?.length > 0
-        ? products
-            .filter((product) => !uniqueSelectedProducts.includes(product.id)) // Filter out selected products
-            .map((product) => ({
-              label: product.title,
-              value: product.id,
-            }))
-        : [];
-  
-    // Filter collections: remove already selected collections
-    const filteredCollections =
-      collections?.length > 0
-        ? collections
-            .filter((collection) => !uniqueSelectedCollections.includes(collection.id)) // Filter out selected collections
-            .map((collection) => ({
-              label: collection.title,
-              value: collection.id,
-            }))
-        : [];
-  
+    const allSelectedProductsRaw =
+      metaobjects?.flatMap((obj) => obj.selectedProducts || []) || [];
+    const allSelectedCollectionsRaw =
+      metaobjects?.flatMap((obj) => obj.selectedCollections || []) || [];
+
+    const uniqueSelectedProducts = [
+      ...new Set(
+        allSelectedProductsRaw.flatMap((item) => {
+          try {
+            const parsed = JSON.parse(item);
+            return Array.isArray(parsed) ? parsed : [item];
+          } catch {
+            return [item];
+          }
+        }),
+      ),
+    ];
+
+    const alertSelectedProducts = Array.isArray(alertData?.selectedProducts)
+      ? alertData.selectedProducts
+      : JSON.parse(alertData?.selectedProducts || "[]");
+
+    const filteredProducts = (products || [])
+      .filter(
+        (product) =>
+          alertSelectedProducts.includes(product.value) ||
+          !uniqueSelectedProducts.includes(product.value),
+      )
+      .map((product) => ({
+        label: product.label,
+        value: product.value,
+      }));
+
+    const uniqueSelectedCollections = [
+      ...new Set(
+        allSelectedCollectionsRaw.flatMap((item) => {
+          try {
+            const parsed = JSON.parse(item);
+            return Array.isArray(parsed) ? parsed : [item];
+          } catch {
+            return [item];
+          }
+        }),
+      ),
+    ];
+
+    const alertSelectedCollections = Array.isArray(
+      alertData?.selectedCollections,
+    )
+      ? alertData.selectedCollections
+      : JSON.parse(alertData?.selectedCollections || "[]");
+
+    const filteredCollections = (collections || [])
+      .filter(
+        (collection) =>
+          alertSelectedCollections.includes(collection.value) ||
+          !uniqueSelectedCollections.includes(collection.value),
+      )
+      .map((collection) => ({
+        label: collection.label,
+        value: collection.value,
+      }));
+
+    console.log("Filtered Products:", filteredProducts);
+
+    console.log("Selected Products:", allSelectedProductsRaw);
+    console.log("Selected Collections:", uniqueSelectedCollections);
+    console.log("Filtered Products:", filteredProducts);
+    console.log("Filtered Collections:", filteredCollections);
+
+    console.log("Filtered Collections:", filteredCollections);
+
     const metaobjectPositions = metaobjects?.map((obj) => obj.showPosition);
     const filteredOptions = positionOptions.filter((option) => {
       if (alertData?.showPosition === option.value) return true;
@@ -284,15 +325,13 @@ function AlertPopupSettingsPage() {
         !metaobjectPositions.includes(option.value)
       );
     });
-  
+
     setPositionOptions(filteredOptions);
     setAllProducts(filteredProducts);
     setAllCollections(filteredCollections);
-  
-    console.log("filteredCollections", filteredCollections);
-  }, [navigate, metaobjects, products, collections, positionOptions, alertData]);
-  
-  
+    setSelectedCollections(alertData?.selectedCollections);
+    setSelectedProducts(alertData?.selectedProducts)
+  }, [navigate, alertData]);
 
   // useEffect – Handle fetcher update
   useEffect(() => {
@@ -362,7 +401,7 @@ function AlertPopupSettingsPage() {
   };
 
   // Handler – Save
-  console.log("selectedCollections", selectedCollections)
+  console.log("selectedCollections", selectedCollections);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -437,7 +476,6 @@ function AlertPopupSettingsPage() {
     }
   };
 
-
   return (
     <Page
       backAction={{ content: "Back to Dashboard", url: "/app" }}
@@ -491,7 +529,7 @@ function AlertPopupSettingsPage() {
                   error={errors.description}
                   helpText="Describe the message or offer you want to show to your customers."
                 />
-                {showPosition != "maintainance" && 
+                {showPosition != "maintainance" && (
                   <>
                     <TextField
                       label="Primary Button Label"
@@ -511,7 +549,7 @@ function AlertPopupSettingsPage() {
                       helpText="Optional secondary action (e.g., 'No thanks', 'Dismiss')."
                     />
                   </>
-                }
+                )}
                 {image ? (
                   <InlineStack align="start" blockAlign="center" gap="300">
                     <Thumbnail
@@ -616,9 +654,7 @@ function AlertPopupSettingsPage() {
                             setSelectedProducts([]); // Clear selected products
                           }}
                           error={errors.collections}
-                          preselectedOptions={
-                           selectedCollections || []
-                          }
+                          preselectedOptions={selectedCollections || []}
                           disable={isSaving}
                         />
                       )}
@@ -635,27 +671,27 @@ function AlertPopupSettingsPage() {
           >
             <Card>
               <BlockStack gap="400">
-              <Box>
+                <Box>
                   <InlineStack align="space-between">
                     <Label>Set Display Time</Label>
-                    <PremiumBadge />
+            {plan?.hasActivePayment !== true &&  <PremiumBadge/>}
+
                   </InlineStack>
-                 <Box paddingBlockStart={100}>
-                 <Checkbox
-                  label=" Remove “Powered by Poppy” branding"
-                  checked={removeWatermark == true}
-                  disabled={isSaving}
-                  onChange={(checked) => {
-                    if (!hasProPlan) {
-                      setShowUpgradeModal(true);
-                    } else {
-                      setRemoveWatermark(checked);
-                    }
-                  }}
-                />
-                 </Box>
+                  <Box paddingBlockStart={100}>
+                    <Checkbox
+                      label=" Remove “Powered by Poppy” branding"
+                      checked={removeWatermark == true}
+                      disabled={isSaving}
+                      onChange={(checked) => {
+                        if (!hasProPlan) {
+                          setShowUpgradeModal(true);
+                        } else {
+                          setRemoveWatermark(checked);
+                        }
+                      }}
+                    />
+                  </Box>
                 </Box>
-               
               </BlockStack>
             </Card>
           </Section>
@@ -669,18 +705,19 @@ function AlertPopupSettingsPage() {
                 <Box>
                   <InlineStack align="space-between">
                     <Label>Set Display Time</Label>
-                    <PremiumBadge />
+            {plan?.hasActivePayment !== true &&  <PremiumBadge/>}
+
                   </InlineStack>
-                 <Box paddingBlockStart={200}>
-                 <Select
-                    disabled={isSaving}
-                    options={enableDisableOptions}
-                    value={scheduleStatus}
-                    onChange={(value) =>
-                      handleProFeature(() => setScheduleStatus(value))
-                    }
-                  />
-                 </Box>
+                  <Box paddingBlockStart={200}>
+                    <Select
+                      disabled={isSaving}
+                      options={enableDisableOptions}
+                      value={scheduleStatus}
+                      onChange={(value) =>
+                        handleProFeature(() => setScheduleStatus(value))
+                      }
+                    />
+                  </Box>
                 </Box>
                 {scheduleStatus === "enable" && (
                   <InlineGrid columns={{ xs: "1fr", md: "1fr 1fr" }} gap="400">

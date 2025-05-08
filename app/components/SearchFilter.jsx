@@ -12,7 +12,6 @@ function AutocompleteSelect({
   disable,
   error,
 }) {
-  console.log("Preselected", preselectedOptions)
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState(optionsData);

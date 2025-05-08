@@ -31,11 +31,10 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { metaobjects, setMetaobjects, plan } = useAppStore();
+  const { metaobjects, setMetaobjects, plan, setPlan } = useAppStore();
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const location = useLocation();
-
   const deletedId = fetcher.data;
   useEffect(() => {
     if (deletedId) {
@@ -51,6 +50,7 @@ export default function Index() {
   }, [deletedId]);
 
   useEffect(() => {
+   
     const updated = location.state?.updatedMetaobject;
     if (updated) {
       const index = metaobjects.findIndex((obj) => obj.id === updated.id);
@@ -64,7 +64,7 @@ export default function Index() {
 
       setMetaobjects(newMetaobjects);
     }
-  }, [location.state]);
+  }, [location.state, navigate]);
   const isCreatePopupDisabled =
     !(
       plan?.hasActivePayment &&
@@ -72,6 +72,7 @@ export default function Index() {
       plan.appSubscriptions[0]?.status === "ACTIVE" &&
       plan.appSubscriptions[0]?.name === "Pro Plan"
     ) && metaobjects?.length >= 2;
+    console.log("IsPor", isCreatePopupDisabled)
 
   const confirmDeleteAlert = async (id) => {
     fetcher.submit(

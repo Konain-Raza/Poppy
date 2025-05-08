@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "8401dba5e37a862351d8eb2c49b01276"
-application_url = "https://cw-controlled-murphy-through.trycloudflare.com"
+application_url = "https://nice-association-important-diy.trycloudflare.com"
 embedded = true
 name = "Poppy"
 handle = "poppy-4"
@@ -20,9 +20,9 @@ scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaob
 
 [auth]
 redirect_urls = [
-  "https://cw-controlled-murphy-through.trycloudflare.com/auth/callback",
-  "https://cw-controlled-murphy-through.trycloudflare.com/auth/shopify/callback",
-  "https://cw-controlled-murphy-through.trycloudflare.com/api/auth/callback"
+  "https://nice-association-important-diy.trycloudflare.com/auth/callback",
+  "https://nice-association-important-diy.trycloudflare.com/auth/shopify/callback",
+  "https://nice-association-important-diy.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

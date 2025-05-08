@@ -1,4 +1,11 @@
-import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import {
+  Link,
+  Outlet,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useRouteError,
+} from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
@@ -12,11 +19,15 @@ import { Button } from "@shopify/polaris";
 import BannerModal from "../components/BannerModal";
 import checkAppEmbedStatus from "../services/checkAppEmbedStatus";
 import SupportPopover from "../components/Popover";
+import updateBillingMetaobject from "../services/updateBillingMetaobject";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }) => {
   const { billing, admin } = await authenticate.admin(request);
   const plan = await billing.check();
+  if (plan.hasActivePayment == true) {
+    await updateBillingMetaobject(admin, "pro");
+  }
   const { themeId, isEnabled } = await checkAppEmbedStatus(admin);
   const type = "alertium-by-konain-bhai";
 
@@ -61,13 +72,13 @@ export const loader = async ({ request }) => {
   const queryData = await queryResponse.json();
 
   const products = queryData.data.products.edges.map(({ node }) => ({
-    id: node.id,
-    title: node.title,
+    value: node.id,
+    label: node.title,
   }));
 
   const collections = queryData.data.collections.edges.map(({ node }) => ({
-    id: node.id,
-    title: node.title,
+    value: node.id,
+    label: node.title,
   }));
 
   const shop = queryData.data?.shop || "";
@@ -100,6 +111,7 @@ export const loader = async ({ request }) => {
 };
 
 export default function App() {
+  const location = useLocation();
   const {
     setProducts,
     setMetaobjects,
@@ -130,8 +142,8 @@ export default function App() {
     setCollections(collections);
     setShop(shop);
     setPlan(plan);
-    console.log(plan)
-  }, [apiKey]);
+    console.log("App Plan", plan);
+  }, [location]);
   const previewTheme = () => {
     const themeEditorId = themeId.split("/").pop();
     const shopName = shop?.name;
@@ -152,7 +164,7 @@ export default function App() {
         <Link to="/app/pricing">Pricing</Link>
       </NavMenu>
       <Outlet />
-     <SupportPopover/>
+      <SupportPopover />
       <BannerModal
         open={showModal}
         onClose={() => setShowModal(false)}
