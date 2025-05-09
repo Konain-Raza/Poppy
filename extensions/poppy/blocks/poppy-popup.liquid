@@ -48,6 +48,8 @@ console.log(planType);
     const primaryBtn = document.getElementById('alertPrimaryBtn');
     const secondaryBtn = document.getElementById('alertSecondaryBtn');
     const dontShowAgain = document.getElementById('dontShowAgain');
+  const isProductPage = {% if template == 'product' %}true{% else %}false{% endif %};
+    let interceptedAction = null;
 
     if (!modal) {
       console.debug("⚠️ Modal or close button not found.");
@@ -93,30 +95,40 @@ allMetaobjects.forEach(meta => {
   }) : [];
 
   // Evaluate product and collection matching condition
-  const isProductOrCollectionMatch = (
-    (meta.selectBy === "products" && meta.selectedProducts.includes(currentProduct?.id)) ||
-    (meta.selectBy === "collections" && Array.isArray(currentCollections) && currentCollections.length > 0 && currentCollections.some(collection => {
-      const collectionId = collection.id.toString(); // Convert collection.id to string for comparison
-      return selectedCollectionIds.includes(collectionId); // Compare the IDs
-    }))
-  );
+  const isProductOrCollectionMatch =
+  (meta.selectBy === "products" && (() => {
+    const id = currentProduct?.id?.toString();
+    const selectedProducts = Array.isArray(meta.selectedProducts) ? meta.selectedProducts : [];
+    const match = selectedProducts.some(p => p.split("/").pop() === id);
 
-  // Show modal based on conditions
+    console.log("Product Match:", { id, selectedProducts, match });
+    return match;
+  })()) ||
+  (meta.selectBy === "collections" && Array.isArray(currentCollections) && currentCollections.some(c => {
+    const id = c.id.toString();
+    const match = selectedCollectionIds.includes(id);
+
+    console.log("Collection Match:", { id, selectedCollectionIds, match });
+    return match;
+  }));
+
+
 
   // Show maintenance modal first (priority)
   if (showPosition === "maintainance" && !maintainanceShown) {
     displayModal(meta);
     maintainanceShown = true;
     console.log("📢 Showing maintenance modal");
+
     return; // Exit loop after showing the "maintainance" modal
   }
 
   // Show sitewite modal if maintenance hasn't been shown and sitewite is available
-  if (showPosition === "sitewite" && !maintainanceShown ) {
+  if (showPosition === "sitewite" && !maintainanceShown && !isProductPage) {
     console.log("📢 Showing sitewide modal");
+    interceptedAction = "sitewite";
     displayModal(meta);
-
-    return; // Exit loop after showing the "sitewite" modal
+    return;
   }
 
   // Show close intent modal when the user is about to leave the page
@@ -124,7 +136,7 @@ allMetaobjects.forEach(meta => {
     
     document.addEventListener('mouseout', function (event) {
       // Check if the mouse is leaving the window
-      if (event.relatedTarget === null) {
+      if (event.relatedTarget === null && modal.style.display !== "flex") {
         console.log('Mouse has left the window or document area!');
         // Your custom logic here
         displayModal(meta);
@@ -182,7 +194,6 @@ allMetaobjects.forEach(meta => {
   }
 });
 
-    let interceptedAction = null;
 
     function displayModal(meta) {
       console.log("📢 Showing modal:", meta.title);
@@ -217,9 +228,16 @@ allMetaobjects.forEach(meta => {
         }
         modal.style.display = "none";
         if (interceptedAction === "addToCart") {
-          const form = document.querySelector('form[action^="/cart/add"]');
-          if (form) form.submit();
-        }
+  const forms = document.querySelectorAll('form[action^="/cart/add"]');
+  
+  if (forms && forms.length > 1) {
+    forms[0].submit();  // Submit the second form (index 1)
+  } else {
+    console.error('Form not found for adding to cart.');
+  }
+}
+
+
         if (interceptedAction === "checkout") {
           window.location.href = "/checkout";
         }
@@ -227,13 +245,18 @@ allMetaobjects.forEach(meta => {
 
       secondaryBtn.onclick = () => {
         modal.style.display = "none";
-        if (meta.showPosition === "onVisit") {
+        if (meta.showPosition === "productPage") {
           window.location.href = "/";
+        }
+        if (meta.showPosition === "sitewite") {
+          window.location.reload();
         }
       };
     }
   }
 </script>
+
+
 
 
 

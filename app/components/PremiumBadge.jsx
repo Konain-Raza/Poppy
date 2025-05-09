@@ -9,7 +9,7 @@ const PremiumBadge = () => {
       borderRadius: '20px', 
       color: "black", 
       fontWeight:"bold",
-      border: "1px solid gray"
+      // border: "1px solid gray"
     }}>⭐ Pro</div>
   </Box>;
 };

@@ -1,4 +1,3 @@
-/* Modal Overlay */
 #shopifyAlertModal {
     display: none;
     position: fixed;
@@ -14,7 +13,6 @@
     animation: fadeIn 0.4s ease forwards;
 }
 
-/* Modal Animation */
 @keyframes fadeIn {
     0% { opacity: 0; }
     100% { opacity: 1; }
@@ -25,7 +23,6 @@
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* Modal Content */
 .alert-modal-content {
     background: #ffffff;
     border: 1px solid #ddd;
@@ -37,10 +34,9 @@
     text-align: center;
     transform: scale(0.8);
     animation: scaleIn 0.4s ease forwards;
-    position: relative; /* For positioning the close button */
+    position: relative;
 }
 
-/* Modal Title */
 .alert-modal-content h2 {
     margin-top: 0;
     font-size: 26px;
@@ -49,7 +45,6 @@
     font-weight: 600;
 }
 
-/* Modal Description */
 .alert-modal-content p {
     color: var(--description-text-color);
     font-size: 16px;
@@ -58,15 +53,14 @@
     font-family: 'Roboto', sans-serif;
 }
 
-/* Button Container */
 .alert-modal-actions {
     display: flex;
     justify-content: center;
     gap: 1rem;
     flex-wrap: wrap;
+    padding-bottom: 20px;
 }
 
-/* Buttons Shared Styles */
 .alert-modal-actions button {
     padding: 12px 24px;
     border: none;
@@ -77,7 +71,6 @@
     transition: all 0.3s ease;
 }
 
-/* Primary Button */
 .primary-btn {
     background-color: var(--primary-button-color);
     color: white;
@@ -88,10 +81,9 @@
     transform: translateY(-2px);
 }
 
-/* Secondary Button */
 .secondary-btn {
     background-color: var(--secondary-button-color);
-    color: #374151; /* Optional override if needed */
+    color: #374151;
     border: 1px solid #d1d5db;
 }
 
@@ -100,7 +92,6 @@
     transform: translateY(-2px);
 }
 
-/* Close Button */
 .close-btn {
     position: absolute;
     top: 10px;
@@ -113,8 +104,8 @@
 }
 
 .close-btn:hover {
-    color: #ff0000; /* Red color for hover effect */
-    transform: scale(1.2); /* Slight zoom effect on hover */
+    color: #ff0000;
+    transform: scale(1.2);
 }
 
 .watermark {
@@ -126,14 +117,13 @@
     pointer-events: none;
     user-select: none;
     z-index: 9999;
-  }
-  
-  
-  #alertImage {
-    display: block; /* Initially hidden, shown when available */
-    max-width: 100%; /* Ensure the image doesn't overflow */
-    height: auto; /* Keep aspect ratio intact */
-    margin: 0 auto; /* Center the image */
-    border-radius: 5px; /* Optional: add rounded corners */
-    margin-bottom: 20px; /* Add space between image and other elements */
-  }
+}
+
+#alertImage {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}

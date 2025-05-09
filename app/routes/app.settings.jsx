@@ -170,6 +170,7 @@ function AlertPopupSettingsPage() {
   // Form Input States
 
   const [alertStatus, setAlertStatus] = useState("inactive");
+  const [handle, setHandle] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
@@ -223,6 +224,7 @@ function AlertPopupSettingsPage() {
   useEffect(() => {
     if (alertData) {
       console.log("Alert", alertData);
+      setHandle(alertData.handle || "");
       setAlertStatus(alertData.alertStatus || "disable");
       setTitle(alertData.title || "");
       setDescription(alertData.description || "");
@@ -242,7 +244,7 @@ function AlertPopupSettingsPage() {
       setSelectedCollections(alertData.selectedCollections || []);
       setSelectedProducts(alertData.selectedProducts || []);
     }
-  }, [alertData]);
+  }, [alertData, navigate]);
 
   useEffect(() => {
     const allSelectedProductsRaw =
@@ -330,7 +332,7 @@ function AlertPopupSettingsPage() {
     setAllProducts(filteredProducts);
     setAllCollections(filteredCollections);
     setSelectedCollections(alertData?.selectedCollections);
-    setSelectedProducts(alertData?.selectedProducts)
+    setSelectedProducts(alertData?.selectedProducts);
   }, [navigate, alertData]);
 
   // useEffect – Handle fetcher update
@@ -404,12 +406,25 @@ function AlertPopupSettingsPage() {
   console.log("selectedCollections", selectedCollections);
 
   const handleSave = async () => {
+    const isUpdating = Boolean(alertData);
+
+    let handleToUse;
+    if (isUpdating) {
+      handleToUse = alertData.handle;
+    } else {
+      const highestAlertHandle = metaobjects
+        .map((obj) => parseInt(obj.handle.replace("alert-", "")))
+        .reduce((max, current) => Math.max(max, current), 0);
+      handleToUse = `alert-${highestAlertHandle + 1}`;
+    }
+
     setIsSaving(true);
     let hasError = false;
     const newErrors = {
       title: "",
       description: "",
       collections: "",
+      products: "",
       countries: "",
     };
 
@@ -422,22 +437,32 @@ function AlertPopupSettingsPage() {
       hasError = true;
     }
     if (countryRestriction === "enable" && selectedCountries.length === 0) {
-      newErrors.countries = "Select at least one country";
+      newErrors.countries = "Please select at least one country.";
+      hasError = true;
+    }
+
+    if (selectBy === "collections" && selectedCollections.length === 0) {
+      newErrors.collections = "Please select at least one collection.";
+      hasError = true;
+    }
+
+    if (selectBy === "products" && selectedProducts.length === 0) {
+      newErrors.products = "Please select at least one product."; // Fixing inconsistent error handling
       hasError = true;
     }
 
     setErrors(newErrors);
+
     if (hasError) {
       shopify.toast.show(
-        "📛 Couldn’t complete the save. Please check everything",
+        "📛 Couldn't complete the save. Please check everything",
       );
       setIsSaving(false);
       return;
     }
-
     try {
       const payload = {
-        handle: alertData?.handle || `alert-${(metaobjects?.length || 0) + 1}`,
+        handle: handleToUse, // Use the determined handle
         alertStatus,
         title,
         description,
@@ -468,14 +493,13 @@ function AlertPopupSettingsPage() {
     } catch (error) {
       console.error("Error in submitting form:", error);
       shopify.toast.show(
-        "📛 Couldn’t complete the save. Please check everything",
+        "📛 Couldn't complete the save. Please check everything",
       );
     } finally {
       setIsSaving(false);
       resetFields();
     }
   };
-
   return (
     <Page
       backAction={{ content: "Back to Dashboard", url: "/app" }}
@@ -667,17 +691,13 @@ function AlertPopupSettingsPage() {
           <Divider />
           <Section
             title="Branding Options"
+            badge={true}
             description=" Enable or remove the “Powered by Poppy” watermark from your pop-up."
           >
             <Card>
               <BlockStack gap="400">
                 <Box>
                   <InlineStack align="space-between">
-                    <Label>Set Display Time</Label>
-            {plan?.hasActivePayment !== true &&  <PremiumBadge/>}
-
-                  </InlineStack>
-                  <Box paddingBlockStart={100}>
                     <Checkbox
                       label=" Remove “Powered by Poppy” branding"
                       checked={removeWatermark == true}
@@ -690,13 +710,14 @@ function AlertPopupSettingsPage() {
                         }
                       }}
                     />
-                  </Box>
+                  </InlineStack>
                 </Box>
               </BlockStack>
             </Card>
           </Section>
           {/* Schedule */}
           <Section
+            badge={true}
             title="Schedule Popup"
             description=" Set a specific time range for when this pop-up should be shown."
           >
@@ -705,8 +726,6 @@ function AlertPopupSettingsPage() {
                 <Box>
                   <InlineStack align="space-between">
                     <Label>Set Display Time</Label>
-            {plan?.hasActivePayment !== true &&  <PremiumBadge/>}
-
                   </InlineStack>
                   <Box paddingBlockStart={200}>
                     <Select
@@ -815,17 +834,23 @@ function AlertPopupSettingsPage() {
   );
 }
 
-const Section = ({ title, description, children }) => (
+const Section = ({ title, description, children, badge = false }) => (
   <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
-    <Box>
+    <Box
+    >
       <BlockStack gap="200">
-        <Text as="h3" variant="headingMd">
-          {title}
-        </Text>
+        <Box>
+          <InlineStack align="start" gap={400} blockAlign="center">
+            <Text as="h3" variant="headingMd">
+              {title}
+            </Text>
+            {badge && <PremiumBadge />}
+          </InlineStack>
+        </Box>
         <Text variant="bodyMd">{description}</Text>
       </BlockStack>
     </Box>
-    <Box>{children}</Box>
+    <Box >{children}</Box>
   </InlineGrid>
 );
 

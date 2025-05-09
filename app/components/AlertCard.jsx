@@ -27,7 +27,15 @@ export default function AlertCard({ onDelete, alert, blur = false }) {
     countryRestriction,
     userOnly,
   } = alert;
-
+  const buttonTextMap = {
+    "addToCart": "Add to Cart",
+    "productPage": "Product Page",
+    "buynow": "Buy Now",
+    "closeIntent": "Close Intent",
+    "maintainance": "Maintenance",
+    "sitewite": "Sitewide"
+  };
+  const buttonText = buttonTextMap[showPosition] || showPosition;
   const handleEdit = () => {
     navigate("/app/settings/", { state: { alert } });
   };
@@ -89,15 +97,7 @@ export default function AlertCard({ onDelete, alert, blur = false }) {
                       {alertStatus === "Active" ? "Active" : "Inactive"}
                     </Badge>
                     <Badge tone="info" progress="complete">
-                      {showPosition === "addToCart"
-                        ? "Add to Cart"
-                        : showPosition === "onVisit"
-                        ? "On Visit"
-                        : showPosition === "checkout"
-                        ? "Checkout"
-                        : showPosition === "tabClose"
-                        ? "Leave"
-                        : showPosition}
+                      {buttonText}
                     </Badge>
                     {scheduleStatus === "enable" && (
                       <Badge tone="success" progress="complete">

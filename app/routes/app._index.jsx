@@ -92,7 +92,7 @@ export default function Index() {
       subtitle="Create stunning alerts, disclaimers, and pop-ups that convert, inform, and delight – all in just a few clicks"
       hasSubtitleMaxWidth={false}
       primaryAction={{
-        content: "Create Popup",
+        content: "Create a Popup",
         disabled: isCreatePopupDisabled,
         icon: PlusIcon,
         onAction: () => {
@@ -101,10 +101,10 @@ export default function Index() {
       }}
       secondaryActions={[
         {
-          content: "Docs",
+          content: "Documentation",
           external: "true",
           icon: ExternalIcon,
-          url: "https://www.facebook.com/business/learn/facebook-page-build-audience",
+          url: "https://objects.ws/docs/",
         },
       ]}
     >

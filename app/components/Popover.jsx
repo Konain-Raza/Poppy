@@ -2,8 +2,8 @@ import { Button, Popover, ActionList } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 import { QuestionCircleIcon } from "@shopify/polaris-icons";
 export default function SupportPopover({
-  jiraUrl = "https://your-jira-support-link.com",
-  whatsappUrl = "https://wa.me/1234567890",
+  jiraUrl = "https://objectsws.atlassian.net/servicedesk/customer/portal/107",
+  whatsappUrl = "https://wa.me/+923242122924",
 }) {
   const [popoverActive, setPopoverActive] = useState(false);
 
@@ -37,7 +37,6 @@ export default function SupportPopover({
           actionRole="menuitem"
           items={[
             {
-            icon:"https://img.icons8.com/ios/50/whatsapp--v1.png",
               content: "Submit Ticket",
               onAction: () => {
                 window.open(jiraUrl, "_blank");

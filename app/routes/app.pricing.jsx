@@ -169,6 +169,7 @@ export const action = async ({ request }) => {
 
 export default function PricingPage() {
   const fetcher = useFetcher();
+  let isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
   const { plan, metaobjects } = useAppStore(); // Zustand plan object
   const plans = [
     {
@@ -193,7 +194,7 @@ export default function PricingPage() {
         "Maintenance mode notifications",
         "Exit-intent conversion",
         "Priority support",
-        "Branding-free experience: Remove our watermark",
+        "Remove the watermark",
       ],
     },
   ];
@@ -262,7 +263,8 @@ export default function PricingPage() {
                             : plan.type,
                         )
                       }
-                      disabled={plan.type === "free" && !hasProPlan}
+                      disabled={plan.type === "free" && !hasProPlan || isLoading}
+                      loading={isLoading}
                     >
                       {plan.type === "free"
                         ? hasProPlan
