@@ -15,7 +15,7 @@ import en from "@shopify/polaris/locales/en.json";
 import { json } from "@remix-run/node";
 import useAppStore from "../store/Store";
 import { useEffect, useState } from "react";
-import { Button } from "@shopify/polaris";
+import { Box, Button, InlineStack, Text } from "@shopify/polaris";
 import BannerModal from "../components/BannerModal";
 import checkAppEmbedStatus from "../services/checkAppEmbedStatus";
 import SupportPopover from "../components/Popover";
@@ -165,6 +165,14 @@ export default function App() {
       </NavMenu>
       <Outlet />
       <SupportPopover />
+      <Box paddingBlockEnd={1000} paddingBlockStart={1000}>
+        <InlineStack align="center" blockAlign="center">
+          <Text variant="headingMd" >
+            For help or setup guidance, contact us at{" "}
+            <Link>contact@objects.ws</Link>.
+          </Text>
+        </InlineStack>
+      </Box>
       <BannerModal
         open={showModal}
         onClose={() => setShowModal(false)}

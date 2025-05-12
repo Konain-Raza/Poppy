@@ -110,7 +110,9 @@ export default function Index() {
     >
       {metaobjects && metaobjects.length > 0 ? (
         <>
-          <Box paddingBlockEnd={300}>
+          <Box style={{
+            backgroundColor:"blue"
+          }}>
             <Text variant="headingMd" as="h6">
               All Popups & Disclaimers
             </Text>

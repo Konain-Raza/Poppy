@@ -82,7 +82,6 @@ allMetaobjects.forEach(meta => {
     const end = new Date(meta.endDate);
     if (now < start || now > end) return;
   }
-  console.log("Alert:", meta)
 
   const showPosition = meta.showPosition;
   const popupImage = meta.popupImage;
@@ -124,7 +123,7 @@ allMetaobjects.forEach(meta => {
   }
 
   // Show sitewite modal if maintenance hasn't been shown and sitewite is available
-  if (showPosition === "sitewite" && !maintainanceShown && !isProductPage) {
+  if (showPosition === "sitewite" && !maintainanceShown ) {
     console.log("📢 Showing sitewide modal");
     interceptedAction = "sitewite";
     displayModal(meta);
@@ -195,64 +194,160 @@ allMetaobjects.forEach(meta => {
 });
 
 
-    function displayModal(meta) {
-      console.log("📢 Showing modal:", meta.title);
-      modal.style.display = "flex";
+function displayModal(meta) {
+  console.log("📢 Displaying Modal for:", meta.title);
 
-      document.getElementById('alertTitle').textContent = meta.title || "Notice";
-      document.getElementById('alertDescription').textContent = meta.description || "";
-      primaryBtn.textContent = meta.primaryText || "OK";
-      secondaryBtn.textContent = meta.secondaryText || "Cancel";
-      const modalImage = document.getElementById("alertImage");
-      const doNotShowAgain = document.getElementById("dontShowAgainWrapper")
-      if (meta.image) {
-    modalImage.src = meta.image; // Set the image source dynamically
-    modalImage.style.display = "block"; // Show the image
-  } else {
-    modalImage.style.display = "none"; // Hide the image if not available
+  const productId = currentProduct?.id?.toString();
+  console.log("🔍 Product ID:", productId);
+
+  // if (!productId) {
+  //   console.warn("⚠️ Product ID is undefined. Exiting modal display.");
+  //   return;
+  // }
+
+  let sessionData = JSON.parse(sessionStorage.getItem('acceptedProducts')) || {
+    addToCart: [],
+    checkout: [],
+    productPage: [],
+    sitewide: false,
+  };
+
+  if (!Array.isArray(sessionData.addToCart)) sessionData.addToCart = [];
+  if (!Array.isArray(sessionData.checkout)) sessionData.checkout = [];
+  if (!Array.isArray(sessionData.productPage)) sessionData.productPage = [];
+
+  console.log("📦 Session Data:", sessionData);
+
+  const isAddToCartAccepted = sessionData.addToCart.includes(productId);
+  const isCheckoutAccepted = sessionData.checkout.includes(productId);
+  const isProductPageAccepted = sessionData.productPage.includes(productId);
+  const isSitewideAccepted = sessionData.sitewide;
+
+  console.log("✅ Add to Cart Accepted:", isAddToCartAccepted);
+  console.log("✅ Checkout Accepted:", isCheckoutAccepted);
+  console.log("✅ Product Page Accepted:", isProductPageAccepted);
+  console.log("✅ Sitewide Accepted:", isSitewideAccepted);
+
+  if (interceptedAction === "addToCart" && isAddToCartAccepted) {
+    console.log("🚀 Add to Cart action triggered for accepted product.");
+    const addToCartBtn = document.querySelector('button[name="add"]');
+    if (addToCartBtn) addToCartBtn.click();
+    return;
   }
+
+  if (interceptedAction === "checkout" && isCheckoutAccepted) {
+    console.log("🚀 Checkout action triggered for accepted product.");
+    window.location.href = "/checkout";
+    return;
+  }
+
+  if (meta.showPosition === "productPage" && isProductPageAccepted) {
+    console.log("✅ Product page modal already accepted for product ID:", productId);
+    return;
+  }
+
+  if (meta.showPosition === "sitewite" && isSitewideAccepted) {
+    console.log("✅ Sitewide modal already accepted.");
+    return;
+  }
+
+  console.log("🟢 Displaying Modal...");
+  console.log("Modal Display Before:", getComputedStyle(modal).display);
+
+  modal.style.display = "flex";
+
+  console.log("Modal Display After:", getComputedStyle(modal).display);
+
+  document.getElementById('alertTitle').textContent = meta.title || "Notice";
+  document.getElementById('alertDescription').textContent = meta.description || "";
+  primaryBtn.textContent = meta.primaryText || "OK";
+  secondaryBtn.textContent = meta.secondaryText || "Cancel";
+  const modalImage = document.getElementById("alertImage");
+
+  if (meta.image) {
+    modalImage.src = meta.image;
+    modalImage.style.display = "block";
+  } else {
+    modalImage.style.display = "none";
+  }
+
   const watermark = document.getElementById("watermark");
-  if(meta.removeWatermark == "true" && planType !== "pro"){
-    watermark.style.display = "block"; 
-
+  if (meta.removeWatermark === "true" && planType !== "pro") {
+    watermark.style.display = "block";
   }
-  if(meta.showPosition === "maintainance"){
-    doNotShowAgain.style.display = "none"
+
+  if (meta.showPosition === "maintainance") {
+    console.log("🛠 Maintenance Modal - No Buttons");
     primaryBtn.style.display = "none";
-    secondaryBtn.style.display = "none"
+    secondaryBtn.style.display = "none";
+    return;
+  }
 
-  }
-      primaryBtn.onclick = () => {
-        if (dontShowAgain?.checked) {
-          sessionStorage.setItem('poppyAlertDismissed', 'true');
-        }
-        modal.style.display = "none";
-        if (interceptedAction === "addToCart") {
-  const forms = document.querySelectorAll('form[action^="/cart/add"]');
-  
-  if (forms && forms.length > 1) {
-    forms[0].submit();  // Submit the second form (index 1)
-  } else {
-    console.error('Form not found for adding to cart.');
-  }
+  primaryBtn.onclick = () => {
+    console.log("✅ Primary Button Clicked");
+    modal.style.display = "none";
+
+    let sessionData = JSON.parse(sessionStorage.getItem('acceptedProducts')) || {
+      addToCart: [],
+      checkout: [],
+      productPage: [],
+      sitewide: false,
+    };
+
+    if (!Array.isArray(sessionData.addToCart)) sessionData.addToCart = [];
+    if (!Array.isArray(sessionData.checkout)) sessionData.checkout = [];
+    if (!Array.isArray(sessionData.productPage)) sessionData.productPage = [];
+
+    if (interceptedAction === "addToCart") {
+      if (!sessionData.addToCart.includes(productId)) {
+        sessionData.addToCart.push(productId);
+        console.log("🛒 Added to AddToCart Session:", productId);
+      }
+    }
+
+    if (interceptedAction === "checkout") {
+      if (!sessionData.checkout.includes(productId)) {
+        sessionData.checkout.push(productId);
+        console.log("🛒 Added to Checkout Session:", productId);
+      }
+    }
+
+    if (meta.showPosition === "productPage") {
+      if (!sessionData.productPage.includes(productId)) {
+        sessionData.productPage.push(productId);
+        console.log("📦 Added to ProductPage Session:", productId);
+      }
+    }
+
+    if (meta.showPosition === "sitewite") {
+      sessionData.sitewide = true;
+      console.log("🌐 Sitewide Accepted");
+    }
+
+    sessionStorage.setItem('acceptedProducts', JSON.stringify(sessionData));
+
+    if (interceptedAction === "addToCart") {
+      const addToCartBtn = document.querySelector('button[name="add"]');
+      if (addToCartBtn) addToCartBtn.click();
+    }
+
+    if (interceptedAction === "checkout") {
+      window.location.href = "/checkout";
+    }
+  };
+
+  secondaryBtn.onclick = () => {
+    console.log("🚫 Secondary Button Clicked");
+    modal.style.display = "none";
+    if (meta.showPosition === "productPage") {
+      window.location.href = "/";
+    }
+    if (meta.showPosition === "sitewite") {
+      window.location.reload();
+    }
+  };
 }
 
-
-        if (interceptedAction === "checkout") {
-          window.location.href = "/checkout";
-        }
-      };
-
-      secondaryBtn.onclick = () => {
-        modal.style.display = "none";
-        if (meta.showPosition === "productPage") {
-          window.location.href = "/";
-        }
-        if (meta.showPosition === "sitewite") {
-          window.location.reload();
-        }
-      };
-    }
   }
 </script>
 

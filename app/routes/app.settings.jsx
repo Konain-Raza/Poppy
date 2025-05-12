@@ -16,6 +16,7 @@ import {
   Button,
   InlineStack,
   Label,
+  Banner,
 } from "@shopify/polaris";
 import { DeleteIcon } from "@shopify/polaris-icons";
 import { useFetcher, useLocation, useNavigate } from "@remix-run/react";
@@ -504,6 +505,7 @@ function AlertPopupSettingsPage() {
     <Page
       backAction={{ content: "Back to Dashboard", url: "/app" }}
       title="Popup Configuration"
+      // subtitle="snfjknfjknskfbjkfbjasbfjasbfjbafjkbajkfb"
       primaryAction={{
         content: isSaving ? "Saving..." : "Save Settings",
         onAction: handleSave,
@@ -513,6 +515,13 @@ function AlertPopupSettingsPage() {
       divider
     >
       <Box paddingBlockEnd="1000">
+<Box paddingBlockStart={300} paddingBlockEnd={300}>
+<Banner title="Important Note 📢 ">
+      <p>
+      To change the popup colors, go to Theme Editor &gt; App Embeds, select Popup and Disclaimer, and edit the color settings.
+      </p>
+    </Banner>
+</Box>
         <BlockStack gap="400">
           {/* Popup Content Settings */}
           <Section
