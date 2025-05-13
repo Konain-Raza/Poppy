@@ -3,9 +3,7 @@
     <img id="alertImage" src="" alt="Alert Image" style="max-width: 100%; height: auto; display: none;" width="100" height="100"/>
     <h2 id="alertTitle"></h2>
     <p id="alertDescription"></p>
-    <label for="dontShowAgain" id="dontShowAgainWrapper">
-      <input type="checkbox" id="dontShowAgain" /> Don't show this again
-    </label>
+ 
     <div class="alert-modal-actions">
       <button id="alertSecondaryBtn" class="secondary-btn">Cancel</button>
       <button id="alertPrimaryBtn" class="primary-btn">OK</button>
@@ -200,10 +198,15 @@ function displayModal(meta) {
   const productId = currentProduct?.id?.toString();
   console.log("🔍 Product ID:", productId);
 
-  // if (!productId) {
-  //   console.warn("⚠️ Product ID is undefined. Exiting modal display.");
-  //   return;
-  // }
+  const watermark = document.getElementById("watermark");
+
+if (meta.removeWatermark === "true" && planType == "pro") {
+  console.log("✅ Condition met for removing watermark");
+  watermark.style.display = "none";
+} else {
+  console.log("❌ Condition NOT met. Watermark remains visible.");
+}
+
 
   let sessionData = JSON.parse(sessionStorage.getItem('acceptedProducts')) || {
     addToCart: [],
@@ -251,12 +254,13 @@ function displayModal(meta) {
     return;
   }
 
-  console.log("🟢 Displaying Modal...");
+  console.log("🟢 Displaying Modal...", meta);
   console.log("Modal Display Before:", getComputedStyle(modal).display);
 
   modal.style.display = "flex";
 
   console.log("Modal Display After:", getComputedStyle(modal).display);
+
 
   document.getElementById('alertTitle').textContent = meta.title || "Notice";
   document.getElementById('alertDescription').textContent = meta.description || "";
@@ -271,10 +275,6 @@ function displayModal(meta) {
     modalImage.style.display = "none";
   }
 
-  const watermark = document.getElementById("watermark");
-  if (meta.removeWatermark === "true" && planType !== "pro") {
-    watermark.style.display = "block";
-  }
 
   if (meta.showPosition === "maintainance") {
     console.log("🛠 Maintenance Modal - No Buttons");

@@ -178,7 +178,7 @@ function AlertPopupSettingsPage() {
   const [primaryText, setPrimaryText] = useState("");
   const [secondaryText, setSecondaryText] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [countryRestriction, setCountryRestriction] = useState("inactive");
+  const [countryRestriction, setCountryRestriction] = useState("disable");
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [scheduleStatus, setScheduleStatus] = useState("disable");
   const [startDate, setStartDate] = useState(new Date());
@@ -196,7 +196,7 @@ function AlertPopupSettingsPage() {
     { label: "Add to Cart", value: "addToCart" },
     { label: "Maintainance", value: "maintainance" },
     { label: "Product Page (Pro)", value: "productPage" },
-    { label: "Close Intent (Pro)", value: "closeIntent" },
+    { label: "Exit Intent (Pro)", value: "closeIntent" },
   ]);
   const [allProducts, setAllProducts] = useState([]);
   const [allCollections, setAllCollections] = useState([]);
@@ -345,9 +345,15 @@ function AlertPopupSettingsPage() {
     if (fetcher.state === "idle" && fetcher.data?.metaobject) {
       const flattenMetaobject = (obj) => {
         const flat = { id: obj.id };
-        for (const field of obj.fields) {
-          flat[field.key] = field.value;
+
+        if (Array.isArray(obj.fields)) {
+          for (const field of obj.fields) {
+            flat[field.key] = field.value;
+          }
+        } else {
+          console.warn("obj.fields is not iterable:", obj.fields);
         }
+
         return flat;
       };
 
@@ -410,13 +416,33 @@ function AlertPopupSettingsPage() {
     const isUpdating = Boolean(alertData);
 
     let handleToUse;
-    if (isUpdating) {
+    if (isUpdating && alertData && alertData.handle) {
       handleToUse = alertData.handle;
     } else {
-      const highestAlertHandle = metaobjects
-        .map((obj) => parseInt(obj.handle.replace("alert-", "")))
-        .reduce((max, current) => Math.max(max, current), 0);
-      handleToUse = `alert-${highestAlertHandle + 1}`;
+      try {
+        if (!metaobjects || metaobjects.length === 0) {
+          handleToUse = "alert-1";
+        } else {
+          const alertNumbers = metaobjects
+            .map((obj) => {
+              try {
+                const match = obj.handle?.match(/alert-(\d+)/);
+                return match ? parseInt(match[1], 10) : 0;
+              } catch {
+                return 0;
+              }
+            })
+            .filter((num) => !isNaN(num));
+
+          const highestNumber =
+            alertNumbers.length > 0 ? Math.max(...alertNumbers) : 0;
+
+          handleToUse = `alert-${highestNumber + 1}`;
+        }
+      } catch (error) {
+        console.error("Error generating handle:", error);
+        handleToUse = `alert-${Date.now()}`;
+      }
     }
 
     setIsSaving(true);
@@ -442,12 +468,20 @@ function AlertPopupSettingsPage() {
       hasError = true;
     }
 
-    if (selectBy === "collections" && selectedCollections.length === 0) {
+    if (
+      selectBy === "collections" &&
+      Array.isArray(selectedCollections) &&
+      selectedCollections.length === 0
+    ) {
       newErrors.collections = "Please select at least one collection.";
       hasError = true;
     }
 
-    if (selectBy === "products" && selectedProducts.length === 0) {
+    if (
+      selectBy === "products" &&
+      Array.isArray(selectedProducts) &&
+      selectedProducts.length === 0
+    ) {
       newErrors.products = "Please select at least one product."; // Fixing inconsistent error handling
       hasError = true;
     }
@@ -515,13 +549,14 @@ function AlertPopupSettingsPage() {
       divider
     >
       <Box paddingBlockEnd="1000">
-<Box paddingBlockStart={300} paddingBlockEnd={300}>
-<Banner title="Important Note 📢 ">
-      <p>
-      To change the popup colors, go to Theme Editor &gt; App Embeds, select Popup and Disclaimer, and edit the color settings.
-      </p>
-    </Banner>
-</Box>
+        <Box paddingBlockStart={300} paddingBlockEnd={300}>
+          <Banner title="Important Note 📢 ">
+            <p>
+              To change the popup colors, go to Theme Editor &gt; App Embeds,
+              select Popup and Disclaimer, and edit the color settings.
+            </p>
+          </Banner>
+        </Box>
         <BlockStack gap="400">
           {/* Popup Content Settings */}
           <Section
@@ -728,13 +763,13 @@ function AlertPopupSettingsPage() {
           <Section
             badge={true}
             title="Schedule Popup"
-            description=" Set a specific time range for when this pop-up should be shown."
+            description=" Set a specific date range for when this pop-up should be shown."
           >
             <Card>
               <BlockStack gap="400">
                 <Box>
                   <InlineStack align="space-between">
-                    <Label>Set Display Time</Label>
+                    <Label>Schedule Your Popup</Label>
                   </InlineStack>
                   <Box paddingBlockStart={200}>
                     <Select
@@ -845,8 +880,7 @@ function AlertPopupSettingsPage() {
 
 const Section = ({ title, description, children, badge = false }) => (
   <InlineGrid columns={{ xs: "1fr", md: "2fr 5fr" }} gap="400">
-    <Box
-    >
+    <Box>
       <BlockStack gap="200">
         <Box>
           <InlineStack align="start" gap={400} blockAlign="center">
@@ -859,7 +893,7 @@ const Section = ({ title, description, children, badge = false }) => (
         <Text variant="bodyMd">{description}</Text>
       </BlockStack>
     </Box>
-    <Box >{children}</Box>
+    <Box>{children}</Box>
   </InlineGrid>
 );
 

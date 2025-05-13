@@ -165,9 +165,9 @@ export default function App() {
       </NavMenu>
       <Outlet />
       <SupportPopover />
-      <Box paddingBlockEnd={1000} paddingBlockStart={1000}>
+      <Box paddingBlockEnd={800} paddingBlockStart={800}>
         <InlineStack align="center" blockAlign="center">
-          <Text variant="headingMd" >
+          <Text variant="bodyLg" >
             For help or setup guidance, contact us at{" "}
             <Link>contact@objects.ws</Link>.
           </Text>
