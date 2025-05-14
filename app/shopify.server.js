@@ -5,7 +5,7 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
-import { shopifyApp, BillingInterval } from "@shopify/shopify-app-remix/server";
+import { BillingInterval } from "@shopify/shopify-app-remix/server";
 import prisma from "./db.server";
 export const FREE_PLAN = "Free Plan";
 export const PRO_PLAN = "Pro Plan";
