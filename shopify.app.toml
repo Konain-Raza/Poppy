@@ -3,8 +3,8 @@
 client_id = "de3f1c14aca996f5f7f6af71cc606a16"
 application_url = "https://oil-sought-worry-temporal.trycloudflare.com"
 embedded = true
-name = "Poppy"
-handle = "poppy-3"
+name = "Popup and Disclaimer"
+handle = "popup-and-disclaimer"
 
 [build]
 automatically_update_urls_on_dev = true

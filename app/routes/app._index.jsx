@@ -50,7 +50,6 @@ export default function Index() {
   }, [deletedId]);
 
   useEffect(() => {
-   
     const updated = location.state?.updatedMetaobject;
     if (updated) {
       const index = metaobjects.findIndex((obj) => obj.id === updated.id);
@@ -72,7 +71,7 @@ export default function Index() {
       plan.appSubscriptions[0]?.status === "ACTIVE" &&
       plan.appSubscriptions[0]?.name === "Pro Plan"
     ) && metaobjects?.length >= 2;
-    console.log("IsPor", isCreatePopupDisabled)
+  console.log("IsPor", isCreatePopupDisabled);
 
   const confirmDeleteAlert = async (id) => {
     fetcher.submit(
@@ -104,89 +103,92 @@ export default function Index() {
           content: "Documentation",
           external: "true",
           icon: ExternalIcon,
-          url: "https://objects.ws/docs/",
+          url: "https://objects.ws/docs/popup-and-disclaimer",
         },
       ]}
     >
       {metaobjects && metaobjects.length > 0 ? (
         <>
-          <Box>
+          <Box paddingBlockEnd={300}>
             <Text variant="headingMd" as="h6">
               All Popups & Disclaimers
             </Text>
           </Box>
 
-    {/* Case: isCreatePopupDisabled is false → show all normally */}
-    {!isCreatePopupDisabled &&
-      metaobjects.map((alert) => (
-        <AlertCard
-          key={alert.id}
-          alert={alert}
-          onDelete={confirmDeleteAlert}
-          blur={false}
-        />
-      ))}
+          {/* Case: isCreatePopupDisabled is false → show all normally */}
+          {!isCreatePopupDisabled &&
+            metaobjects.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                onDelete={confirmDeleteAlert}
+                blur={false}
+              />
+            ))}
 
-    {/* Case: isCreatePopupDisabled is true */}
-    {isCreatePopupDisabled && (
-      <>
-        {/* First 2 cards - normal */}
-        {metaobjects.slice(0, 2).map((alert) => (
-          <AlertCard
-            key={alert.id}
-            alert={alert}
-            onDelete={confirmDeleteAlert}
-            blur={false}
-          />
-        ))}
+          {/* Case: isCreatePopupDisabled is true */}
+          {isCreatePopupDisabled && (
+            <>
+              {/* First 2 cards - normal */}
+              {metaobjects.slice(0, 2).map((alert) => (
+                <AlertCard
+                  key={alert.id}
+                  alert={alert}
+                  onDelete={confirmDeleteAlert}
+                  blur={false}
+                />
+              ))}
 
-        {/* Remaining cards - inside blur */}
-        {metaobjects.length > 2 && (
-  <div style={{ position: "relative" }}>
-    {/* Centered Upgrade Button */}
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 10,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        pointerEvents: "auto", // allow click
-      }}
-    >
-      <Button  icon={LockIcon} size="large" onClick={() => navigate("/app/pricing")}>
-        Upgrade to Unlock
-      </Button>
-    </div>
+              {/* Remaining cards - inside blur */}
+              {metaobjects.length > 2 && (
+                <div style={{ position: "relative" }}>
+                  {/* Centered Upgrade Button */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      zIndex: 10,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      pointerEvents: "auto", // allow click
+                    }}
+                  >
+                    <Button
+                      icon={LockIcon}
+                      size="large"
+                      onClick={() => navigate("/app/pricing")}
+                    >
+                      Upgrade to Unlock
+                    </Button>
+                  </div>
 
-    {/* Blurred Cards */}
-    <div
-      style={{
-        filter: "blur(4px)",
-        pointerEvents: "none", // disables interaction with blurred cards
-        transition: "filter 0.3s ease",
-      }}
-    >
-      {metaobjects.slice(2).map((alert) => (
-        <AlertCard
-          key={alert.id}
-          alert={alert}
-          onDelete={confirmDeleteAlert}
-          blur={false}
-        />
-      ))}
-    </div>
-  </div>
-)}
-
-      </>
-    )}
-  </>
-) : (
+                  {/* Blurred Cards */}
+                  <div
+                    style={{
+                      filter: "blur(4px)",
+                      pointerEvents: "none", // disables interaction with blurred cards
+                      transition: "filter 0.3s ease",
+                    }}
+                  >
+                    {metaobjects.slice(2).map((alert) => (
+                      <AlertCard
+                        key={alert.id}
+                        alert={alert}
+                        onDelete={confirmDeleteAlert}
+                        blur={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      ) : (
         <EmptyState
           heading="Create your custom popups, warnings, and alerts"
           action={{

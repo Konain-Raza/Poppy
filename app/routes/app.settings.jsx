@@ -417,6 +417,7 @@ function AlertPopupSettingsPage() {
 
     let handleToUse;
     if (isUpdating && alertData && alertData.handle) {
+      setHandle(alertData?.handle);
       handleToUse = alertData.handle;
     } else {
       try {
@@ -467,22 +468,25 @@ function AlertPopupSettingsPage() {
       newErrors.countries = "Please select at least one country.";
       hasError = true;
     }
-
     if (
+      (showPosition === "addToCart" ||
+        showPosition === "productPage" ||
+        showPosition === "buynow") &&
       selectBy === "collections" &&
-      Array.isArray(selectedCollections) &&
-      selectedCollections.length === 0
+      (!Array.isArray(selectedCollections) || selectedCollections.length === 0)
     ) {
       newErrors.collections = "Please select at least one collection.";
       hasError = true;
     }
 
     if (
+      (showPosition === "addToCart" ||
+        showPosition === "productPage" ||
+        showPosition === "buynow") && 
       selectBy === "products" &&
-      Array.isArray(selectedProducts) &&
-      selectedProducts.length === 0
+      (!Array.isArray(selectedProducts) || selectedProducts.length === 0)
     ) {
-      newErrors.products = "Please select at least one product."; // Fixing inconsistent error handling
+      newErrors.products = "Please select at least one product.";
       hasError = true;
     }
 
@@ -492,6 +496,8 @@ function AlertPopupSettingsPage() {
       shopify.toast.show(
         "📛 Couldn't complete the save. Please check everything",
       );
+
+      console.log("error", newErrors);
       setIsSaving(false);
       return;
     }
@@ -842,7 +848,6 @@ function AlertPopupSettingsPage() {
                     placeholder="Search by country name"
                     error={errors.countries}
                     onSelectChange={setSelectedCountries}
-                    selected={selectedCountries}
                   />
                 )}
               </BlockStack>

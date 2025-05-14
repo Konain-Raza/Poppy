@@ -8,39 +8,44 @@ function AutocompleteSelect({
   placeholder,
   onSelectChange,
   allowMultiple = true,
-  preselectedOptions,
+  preselectedOptions = [],
   disable,
   error,
 }) {
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState(optionsData);
-  const [open, setOpen] = useState(false); // NEW: control open/close manually
+  const [open, setOpen] = useState(false);
 
-  useEffect(()=>{
-setSelectedOptions(preselectedOptions)
-  },[preselectedOptions])
+  // Sync preselectedOptions to selectedOptions
+  useEffect(() => {
+    if (Array.isArray(preselectedOptions)) {
+      setSelectedOptions(preselectedOptions);
+    }
+  }, [preselectedOptions]);
+
+  // Update text input and filter options
   const updateText = useCallback(
     (value) => {
       setInputValue(value);
 
-      if (value === "") {
-        setOptions(optionsData);
-      } else {
-        const filterRegex = new RegExp(value, "i");
-        const resultOptions = optionsData.filter((option) =>
-          option.label.match(filterRegex),
-        );
-        setOptions(resultOptions);
-      }
+      const filterRegex = new RegExp(value, "i");
+      const resultOptions =
+        value === ""
+          ? optionsData
+          : optionsData.filter((option) => option.label.match(filterRegex));
 
-      setOpen(true); // Always open options when typing
+      setOptions(resultOptions);
+      setOpen(true);
     },
     [optionsData],
   );
 
+  // Handle selection changes
   const updateSelection = useCallback(
     (selected) => {
+      if (!Array.isArray(selected)) return;
+
       let newSelection = selected;
 
       if (!allowMultiple) {
@@ -59,6 +64,7 @@ setSelectedOptions(preselectedOptions)
     [allowMultiple, options, onSelectChange],
   );
 
+  // Remove tag (for multiple selection mode)
   const removeTag = useCallback(
     (tag) => () => {
       const updated = selectedOptions.filter((item) => item !== tag);
@@ -68,34 +74,34 @@ setSelectedOptions(preselectedOptions)
     [selectedOptions, onSelectChange],
   );
 
+  // Render tags for multiple selection
   const verticalContentMarkup =
-    allowMultiple && selectedOptions.length > 0 ? (
+    allowMultiple &&
+    Array.isArray(selectedOptions) &&
+    selectedOptions.length > 0 ? (
       <LegacyStack spacing="extraTight" alignment="center">
-        {Array.isArray(selectedOptions) &&
-          selectedOptions.length > 0 &&
-          selectedOptions.map((value) => {
-            const matchedLabel =
-              optionsData.find((o) => o.value === value)?.label || value;
-            return (
-              <Tag key={value} onRemove={removeTag(value)}>
-                {matchedLabel}
-              </Tag>
-            );
-          })}
+        {selectedOptions.map((value) => {
+          const matchedLabel =
+            optionsData.find((o) => o.value === value)?.label || value;
+          return (
+            <Tag key={value} onRemove={removeTag(value)}>
+              {matchedLabel}
+            </Tag>
+          );
+        })}
       </LegacyStack>
     ) : null;
 
+  // Text field configuration
   const textField = (
     <Autocomplete.TextField
       onChange={updateText}
-      onFocus={() => {
-        setOptions(optionsData); // Load all options again
-        setOpen(true); // NEW: open options when field is focused
-      }}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
       label={label}
       value={inputValue}
       placeholder={placeholder}
-      prefix={<Icon source={SearchIcon} tone="base" />}
+      prefix={<Icon source={SearchIcon} />}
       verticalContent={verticalContentMarkup}
       autoComplete="off"
       error={error}
@@ -110,9 +116,9 @@ setSelectedOptions(preselectedOptions)
       onSelect={updateSelection}
       textField={textField}
       allowMultiple={allowMultiple}
-      open={open} // NEW: control open
-      onOpen={() => setOpen(true)} // NEW: set open true
-      onClose={() => setOpen(false)} // NEW: set open false
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
     />
   );
 }

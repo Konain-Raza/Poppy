@@ -1,13 +1,13 @@
 
 const upsertMetaObject = async (admin,  handle, fields) => {
-  const type = "alertium-by-konain-bhai"; // MetaObject type
+  const type = "popup-and-disclaimer-by-objects"; // MetaObject type
 
   try {
 // Step 1: Ensure MetaObject Definition exists
 const definitionCheck = await admin.graphql(
   `#graphql
     {
-      metaobjectDefinitionByType(type: "alertium-by-konain-bhai") {
+      metaobjectDefinitionByType(type: "popup-and-disclaimer-by-objects") {
         id
         name
       }

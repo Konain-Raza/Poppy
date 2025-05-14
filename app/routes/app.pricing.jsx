@@ -40,7 +40,7 @@ export const action = async ({ request }) => {
         return billing.request({
           plan: PRO_PLAN,
           isTest: true,
-          returnUrl: `https://admin.shopify.com/store/${shopName}/apps/poppy-4/app/`,
+          returnUrl: `https://admin.shopify.com/store/${shopName}/apps/popup-and-disclaimer/app/`,
         });
       },
     });

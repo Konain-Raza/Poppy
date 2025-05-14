@@ -29,13 +29,14 @@ export const loader = async ({ request }) => {
     await updateBillingMetaobject(admin, "pro");
   }
   const { themeId, isEnabled } = await checkAppEmbedStatus(admin);
-  const type = "alertium-by-konain-bhai";
+  const type = "popup-and-disclaimer-by-objects";
 
   const queryResponse = await admin.graphql(`
       {
         shop {
           name
           shopOwnerName
+          myshopifyDomain
         }
         products(first: 200) {
           edges {
@@ -146,10 +147,10 @@ export default function App() {
   }, [location]);
   const previewTheme = () => {
     const themeEditorId = themeId.split("/").pop();
-    const shopName = shop?.name;
+    const shopName = shop?.myshopifyDomain?.split('.')[0];
     console.log(shop, shopName);
     console.log(themeId);
-    const extensionId = "246aa213-aa58-4398-af2b-c884b7c494d8";
+    const extensionId = "cb1cdc0a-09f6-4a9c-8882-92e8dc25e877";
     const extensionName = "poppy-popup";
     const editorUrl = `https://admin.shopify.com/store/${shopName}/themes/${themeEditorId}/editor?context=apps&template=index&activateAppId=${extensionId}/${extensionName}`;
     window.open(editorUrl, "_blank");
@@ -178,7 +179,6 @@ export default function App() {
         onClose={() => setShowModal(false)}
         onPrimary={() => {
           previewTheme();
-          setShowModal(false);
         }}
       />
     </AppProvider>

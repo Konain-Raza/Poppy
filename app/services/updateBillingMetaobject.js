@@ -1,6 +1,6 @@
 const updateBillingMetaobject = async (admin, planValue) => {
-    const type = "poppy-billing"; // new type just for billing info
-    const handle = "poppy-billing-setting"; 
+    const type = "popup-and-disclaimer-billing"; // new type just for billing info
+    const handle = "popup-and-disclaimer-billing-setting"; 
   
     try {
       // Step 1: Ensure Metaobject Definition exists

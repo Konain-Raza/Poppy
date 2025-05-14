@@ -9,13 +9,12 @@ function BannerModal({
   return (
     <Modal
       open={open}
-    //   onClose={onClose}
+      onClose={()=> shopify.toast.show("Turn on the App Embed First to Continue with Our App")}
       title="Activate App Embed to Get Started"
     >
       <Modal.Section>
         <BlockStack>
           <Banner
-            onDismiss={onClose}
             tone="info"
             action={{
               content: 'Enable App Embed',

@@ -1,14 +1,14 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "8401dba5e37a862351d8eb2c49b01276"
-application_url = "https://shows-chapter-frog-strengths.trycloudflare.com"
+client_id = "80fbf6352378a2a38a09685dd9b33fb4"
+application_url = "https://breeds-monitoring-r-never.trycloudflare.com"
 embedded = true
-name = "Popup and Disclaimer"
+name = "Popup & Disclaimer"
 handle = "popup-and-disclaimer"
 
 [build]
+dev_store_url = "konain-raza.myshopify.com"
 include_config_on_deploy = true
-dev_store_url = "developer52.myshopify.com"
 automatically_update_urls_on_dev = true
 
 [webhooks]
@@ -20,9 +20,9 @@ scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaob
 
 [auth]
 redirect_urls = [
-  "https://shows-chapter-frog-strengths.trycloudflare.com/auth/callback",
-  "https://shows-chapter-frog-strengths.trycloudflare.com/auth/shopify/callback",
-  "https://shows-chapter-frog-strengths.trycloudflare.com/api/auth/callback"
+  "https://breeds-monitoring-r-never.trycloudflare.com/auth/callback",
+  "https://breeds-monitoring-r-never.trycloudflare.com/auth/shopify/callback",
+  "https://breeds-monitoring-r-never.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

@@ -29,7 +29,7 @@
 
   function handleShopifyAlertModals() {
     console.log("🔄 Poppy is Running");
-    const billingMetaobject = {{ metaobjects['poppy-billing'].values | json }};
+    const billingMetaobject = {{ metaobjects['popup-and-disclaimer-billing'].values | json }};
     console.log(billingMetaobject);
       
     const planType = !billingMetaobject ? 'free' : billingMetaobject[0].plan;
@@ -55,14 +55,39 @@ console.log(planType);
     }
 
     const allMetaobjects = [];
-    {% for metaobject in metaobjects['alertium-by-konain-bhai'].values %}
+    {% for metaobject in metaobjects['popup-and-disclaimer-by-objects'].values %}
       {% if metaobject.alertStatus == "Active" %}
         allMetaobjects.push({{ metaobject | json }});
       {% endif %}
     {% endfor %}
 
     console.log("🟡 Loaded Active Metaobjects:", allMetaobjects);
-
+    function addToCart() {
+      const variantId = {{ product.selected_or_first_available_variant.id }};
+      const qty = 1;
+  return fetch('/cart/add.js', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({ id: variantId, qty }),
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('✅ Added to cart via AJAX:', data);
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error('❌ Error adding to cart:', error);
+      throw error;
+    });
+}
     // Loop over each active metaobject and attach behavior
     let maintainanceShown = false;
 
@@ -145,12 +170,14 @@ allMetaobjects.forEach(meta => {
   
 
   // Show modal when user clicks "Add to Cart" button
-  if (showPosition === "addToCart" && isProductOrCollectionMatch) {
-    const addBtn = document.querySelector('[name="add"]');
+if (showPosition === "addToCart" && isProductOrCollectionMatch) {
+  const addBtn = document.querySelector('[name="add"]');
+  const sessionData = JSON.parse(sessionStorage.getItem('acceptedProducts')) || { addToCart: [] };
+  const productId = currentProduct?.id?.toString();
+
+  if (!sessionData.addToCart.includes(productId)) {
     if (addBtn) {
-      const clone = addBtn.cloneNode(true);
-      addBtn.parentNode.replaceChild(clone, addBtn);
-      clone.addEventListener('click', function (e) {
+      addBtn.addEventListener('click', function (e) {
         e.preventDefault();
         interceptedAction = "addToCart";
         displayModal(meta);
@@ -158,6 +185,7 @@ allMetaobjects.forEach(meta => {
       });
     }
   }
+}
 
   // Show modal when product page is loaded
   if (showPosition === "productPage" && isProductOrCollectionMatch && planType === "pro") {
@@ -232,9 +260,25 @@ if (meta.removeWatermark === "true" && planType == "pro") {
   console.log("✅ Sitewide Accepted:", isSitewideAccepted);
 
   if (interceptedAction === "addToCart" && isAddToCartAccepted) {
+    const variantId = {{ product.selected_or_first_available_variant.id }}
     console.log("🚀 Add to Cart action triggered for accepted product.");
-    const addToCartBtn = document.querySelector('button[name="add"]');
-    if (addToCartBtn) addToCartBtn.click();
+    fetch('/cart/add.js', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({ id: variantId, quantity: 1 }),
+  })
+    .then(response => response.json())
+    .then(data => {
+      console.log('✅ Added to cart via AJAX:', data);
+
+    })
+    .catch(error => {
+      console.error('❌ Error adding to cart:', error);
+    });
+  
     return;
   }
 
@@ -327,8 +371,7 @@ if (meta.removeWatermark === "true" && planType == "pro") {
     sessionStorage.setItem('acceptedProducts', JSON.stringify(sessionData));
 
     if (interceptedAction === "addToCart") {
-      const addToCartBtn = document.querySelector('button[name="add"]');
-      if (addToCartBtn) addToCartBtn.click();
+   addToCart();
     }
 
     if (interceptedAction === "checkout") {
