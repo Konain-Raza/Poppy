@@ -19,6 +19,8 @@
     --description-text-color: {{ block.settings.description_text_color }};
     --primary-button-color: {{ block.settings.primary_button_color }};
     --secondary-button-color: {{ block.settings.secondary_button_color }};
+    --primary-button-text-color: {{ block.settings.primary_button_text_color }};
+--secondary-button-text-color: {{ block.settings.secondary_button_text_color }};
   }
 </style>
 
@@ -62,32 +64,24 @@ console.log(planType);
     {% endfor %}
 
     console.log("🟡 Loaded Active Metaobjects:", allMetaobjects);
-    function addToCart() {
-      const variantId = {{ product.selected_or_first_available_variant.id }};
-      const qty = 1;
-  return fetch('/cart/add.js', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify({ id: variantId, qty }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('✅ Added to cart via AJAX:', data);
-      window.location.reload();
-    })
-    .catch(error => {
-      console.error('❌ Error adding to cart:', error);
-      throw error;
-    });
+   function addToCartApi() {
+let addToCartForm = document.querySelector('form[action$="/cart/add"]');
+let formData = new FormData(addToCartForm);
+
+fetch(window.Shopify.routes.root + 'cart/add.js', {
+  method: 'POST',
+  body: formData
+})
+.then(response => {
+  console.log('✅ Added to cart via AJAX:', response, formData);
+  window.location.reload();
+})
+.catch(error => {
+  console.error('❌ Error adding to cart:', error);
+});
+
 }
+
     // Loop over each active metaobject and attach behavior
     let maintainanceShown = false;
 
@@ -260,24 +254,7 @@ if (meta.removeWatermark === "true" && planType == "pro") {
   console.log("✅ Sitewide Accepted:", isSitewideAccepted);
 
   if (interceptedAction === "addToCart" && isAddToCartAccepted) {
-    const variantId = {{ product.selected_or_first_available_variant.id }}
-    console.log("🚀 Add to Cart action triggered for accepted product.");
-    fetch('/cart/add.js', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify({ id: variantId, quantity: 1 }),
-  })
-    .then(response => response.json())
-    .then(data => {
-      console.log('✅ Added to cart via AJAX:', data);
-
-    })
-    .catch(error => {
-      console.error('❌ Error adding to cart:', error);
-    });
+ addToCartApi();
   
     return;
   }
@@ -371,7 +348,7 @@ if (meta.removeWatermark === "true" && planType == "pro") {
     sessionStorage.setItem('acceptedProducts', JSON.stringify(sessionData));
 
     if (interceptedAction === "addToCart") {
-   addToCart();
+   addToCartApi();
     }
 
     if (interceptedAction === "checkout") {
@@ -402,7 +379,7 @@ if (meta.removeWatermark === "true" && planType == "pro") {
 
 {% schema %}
 {
-  "name": "Poppy",
+  "name": "Popup & Disclaimer",
   "target": "body",
   "stylesheet": "styles.css",
   
@@ -430,7 +407,19 @@ if (meta.removeWatermark === "true" && planType == "pro") {
       "id": "secondary_button_color",
       "label": "Secondary Button Color",
       "default": "#e0e0e0"
-    }
+    },
+      {
+    "type": "color",
+    "id": "primary_button_text_color",
+    "label": "Primary Button Text Color",
+    "default": "#ffffff"
+  },
+  {
+    "type": "color",
+    "id": "secondary_button_text_color",
+    "label": "Secondary Button Text Color",
+    "default": "#000000"
+  }
   ]
 }
 {% endschema %}

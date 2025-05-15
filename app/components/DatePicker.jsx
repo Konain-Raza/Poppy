@@ -18,7 +18,7 @@ const DatePickerSingle = ({ label, onDateChange, disableBefore }) => {
   });
 
   const datePickerRef = useRef(null);
-  const formattedValue = selectedDate.toISOString().slice(0, 10);
+  const formattedValue = selectedDate.toLocaleDateString("en-CA");
 
   const handleDateSelection = ({ end: newSelectedDate }) => {
     setSelectedDate(newSelectedDate);

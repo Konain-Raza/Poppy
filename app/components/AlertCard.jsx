@@ -31,7 +31,7 @@ export default function AlertCard({ onDelete, alert, blur = false }) {
     "addToCart": "Add to Cart",
     "productPage": "Product Page",
     "buynow": "Buy Now",
-    "closeIntent": "Close Intent",
+    "closeIntent": "Exit Intent",
     "maintainance": "Maintenance",
     "sitewite": "Sitewide"
   };

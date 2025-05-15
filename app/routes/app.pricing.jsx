@@ -108,10 +108,11 @@ export default function PricingPage() {
       <InlineStack align="center" blockAlign="center">
         <BlockStack gap={300}>
           <Text variant="heading2xl" as="h3" alignment="center">
-          🔓 Unlock More with Our Premium Plan 
+            🔓 Unlock More with Our Premium Plan
           </Text>
           <Text alignment="center" variant="bodyLg">
-          Get advanced features, priority support, and unbeatable value — all in our premium plan. Upgrade Now!
+            Get advanced features, priority support, and unbeatable value — all
+            in our premium plan. Upgrade Now!
           </Text>
         </BlockStack>
       </InlineStack>
@@ -186,11 +187,11 @@ export default function PricingPage() {
                               )
                             }
                             disabled={
-                              (plan.type === "free" && hasProPlan) ||
+                              (plan.type === "free" && !hasProPlan) || // Disable if Free Plan is already active
                               (plan.type === "pro" && hasProPlan) ||
                               isLoading
                             }
-                            loading={isLoading}
+                            loading={isLoading && "pro" === plan.type}
                           >
                             {plan.type === "free"
                               ? hasProPlan

@@ -1,0 +1,28 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "1c482a9217ec2a58ea85dfc61d9ada77"
+application_url = "https://context-blake-shall-salvation.trycloudflare.com"
+embedded = true
+name = "UAT Popup and Disclaimer"
+handle = "uat-popup-and-disclaimer"
+
+[build]
+include_config_on_deploy = true
+dev_store_url = "konain-raza.myshopify.com"
+
+[webhooks]
+api_version = "2025-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaobjects,write_products,write_themes"
+
+[auth]
+redirect_urls = [
+  "https://context-blake-shall-salvation.trycloudflare.com/auth/callback",
+  "https://context-blake-shall-salvation.trycloudflare.com/auth/shopify/callback",
+  "https://context-blake-shall-salvation.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false

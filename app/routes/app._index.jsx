@@ -6,12 +6,12 @@ import {
   useNavigate,
 } from "@remix-run/react";
 import { authenticate } from "../shopify.server.js";
-import { Page, EmptyState, Text, Box, Button } from "@shopify/polaris";
+import { Page, EmptyState, Text, Box, Button, Modal } from "@shopify/polaris";
 import useAppStore from "../store/Store.js";
 import AlertCard from "../components/AlertCard.jsx";
 import DeleteMetaobject from "../services/deleteMetaobject.js";
 import { ExternalIcon, LockIcon, PlusIcon } from "@shopify/polaris-icons";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
   return null;
@@ -31,7 +31,9 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
-  const { metaobjects, setMetaobjects, plan, setPlan } = useAppStore();
+  const { metaobjects, setMetaobjects, plan } = useAppStore();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,18 +94,22 @@ export default function Index() {
       hasSubtitleMaxWidth={false}
       primaryAction={{
         content: "Create a Popup",
-        disabled: isCreatePopupDisabled,
         icon: PlusIcon,
         onAction: () => {
-          navigate("/app/settings");
+          if (isCreatePopupDisabled) {
+            setShowUpgradeModal(true);
+          } else {
+            navigate("/app/settings");
+          }
         },
       }}
       secondaryActions={[
         {
           content: "Documentation",
-          external: "true",
-          icon: ExternalIcon,
           url: "https://objects.ws/docs/popup-and-disclaimer",
+          external: true,
+          target: "_blank",
+          icon: ExternalIcon,
         },
       ]}
     >
@@ -185,6 +191,30 @@ export default function Index() {
                   </div>
                 </div>
               )}
+              {showUpgradeModal && (
+                <Modal
+                  open={showUpgradeModal}
+                  onClose={() => setShowUpgradeModal(false)}
+                  title="Upgrade to Pro"
+                  primaryAction={{
+                    content: "Upgrade Now",
+                    onAction: () => navigate("/app/pricing"),
+                  }}
+                  secondaryActions={[
+                    {
+                      content: "Cancel",
+                      onAction: () => setShowUpgradeModal(false),
+                    },
+                  ]}
+                >
+                  <Modal.Section>
+                    <Text>
+                      This feature is available only on the{" "}
+                      <strong>Pro Plan</strong>. Upgrade to unlock it!
+                    </Text>
+                  </Modal.Section>
+                </Modal>
+              )}
             </>
           )}
         </>
@@ -196,8 +226,10 @@ export default function Index() {
             onAction: handleSave,
           }}
           secondaryAction={{
+            external: true,
+            target: "_blank",
             content: "Learn More",
-            url: "https://your-docs-url.com",
+            url: "https://objects.ws/docs/popup-and-disclaimer",
           }}
           image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
         >

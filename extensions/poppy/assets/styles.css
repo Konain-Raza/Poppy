@@ -73,7 +73,7 @@
 
 .primary-btn {
     background-color: var(--primary-button-color);
-    color: white;
+    color: var(--primary-button-text-color);
 }
 
 .primary-btn:hover {
@@ -83,7 +83,7 @@
 
 .secondary-btn {
     background-color: var(--secondary-button-color);
-    color: #374151;
+    color: var(--secondary-button-text-color);
     border: 1px solid #d1d5db;
 }
 

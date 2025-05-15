@@ -47,6 +47,8 @@ export const action = async ({ request }) => {
   if (image && typeof image === "object" && image.size > 0) {
     const result = await getStagedUploadTarget(admin, image);
     resourceUrl = result.resourceUrl || "";
+  } else if (payload.image && typeof payload.image === "string") {
+    resourceUrl = payload.image;
   }
   console.log("Payload", payload);
   const fields = [
@@ -358,7 +360,7 @@ function AlertPopupSettingsPage() {
       };
 
       setIsSaving(false); // stop loading
-      shopify.toast.show("New Pop Created");
+      shopify.toast.show("New Popup Created");
       navigate("/app", {
         state: {
           updatedMetaobject: flattenMetaobject(fetcher.data.metaobject),
@@ -416,35 +418,25 @@ function AlertPopupSettingsPage() {
     const isUpdating = Boolean(alertData);
 
     let handleToUse;
-    if (isUpdating && alertData && alertData.handle) {
-      setHandle(alertData?.handle);
+
+    if (alertData?.handle) {
       handleToUse = alertData.handle;
+    } else if (!metaobjects || metaobjects.length === 0) {
+      handleToUse = "alert-1";
     } else {
-      try {
-        if (!metaobjects || metaobjects.length === 0) {
-          handleToUse = "alert-1";
-        } else {
-          const alertNumbers = metaobjects
-            .map((obj) => {
-              try {
-                const match = obj.handle?.match(/alert-(\d+)/);
-                return match ? parseInt(match[1], 10) : 0;
-              } catch {
-                return 0;
-              }
-            })
-            .filter((num) => !isNaN(num));
+      const alertNumbers = metaobjects
+        .map((obj) => {
+          const match = obj.handle?.match(/alert-(\d+)/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter((num) => !isNaN(num));
 
-          const highestNumber =
-            alertNumbers.length > 0 ? Math.max(...alertNumbers) : 0;
-
-          handleToUse = `alert-${highestNumber + 1}`;
-        }
-      } catch (error) {
-        console.error("Error generating handle:", error);
-        handleToUse = `alert-${Date.now()}`;
-      }
+      const highestNumber =
+        alertNumbers.length > 0 ? Math.max(...alertNumbers) : 0;
+      handleToUse = `alert-${highestNumber + 1}`;
     }
+    setHandle(handleToUse);
+    console.log("Handle to use:", handleToUse);
 
     setIsSaving(true);
     let hasError = false;
@@ -482,7 +474,7 @@ function AlertPopupSettingsPage() {
     if (
       (showPosition === "addToCart" ||
         showPosition === "productPage" ||
-        showPosition === "buynow") && 
+        showPosition === "buynow") &&
       selectBy === "products" &&
       (!Array.isArray(selectedProducts) || selectedProducts.length === 0)
     ) {
@@ -507,7 +499,7 @@ function AlertPopupSettingsPage() {
         alertStatus,
         title,
         description,
-        image,
+        image: typeof image === "string" ? image : undefined,
         primaryText,
         secondaryText,
         selectedProducts,
@@ -524,7 +516,9 @@ function AlertPopupSettingsPage() {
       };
 
       const formData = new FormData();
-      formData.append("image", image);
+      if (image && typeof image !== "string" && image instanceof File) {
+        formData.append("image", image);
+      }
       formData.append("payload", JSON.stringify(payload));
 
       fetcher.submit(formData, {
@@ -651,6 +645,7 @@ function AlertPopupSettingsPage() {
                 ) : (
                   <DropZone
                     label="Popup Image"
+                    type="image"
                     onDrop={handleDrop}
                     allowMultiple={false}
                     disabled={isSaving}
@@ -671,7 +666,7 @@ function AlertPopupSettingsPage() {
             <Card>
               <BlockStack gap="400">
                 <Select
-                  label="Show Popup When"
+                  label="Where to Display the Popup"
                   options={positionOptions}
                   value={showPosition}
                   disabled={isSaving}
@@ -750,7 +745,7 @@ function AlertPopupSettingsPage() {
                   <InlineStack align="space-between">
                     <Checkbox
                       label=" Remove “Powered by Poppy” branding"
-                      checked={removeWatermark == true}
+                      checked={removeWatermark == 'true'}
                       disabled={isSaving}
                       onChange={(checked) => {
                         if (!hasProPlan) {
@@ -783,6 +778,7 @@ function AlertPopupSettingsPage() {
                       options={enableDisableOptions}
                       value={scheduleStatus}
                       onChange={(value) =>
+                        // setScheduleStatus(value)
                         handleProFeature(() => setScheduleStatus(value))
                       }
                     />
@@ -843,11 +839,21 @@ function AlertPopupSettingsPage() {
                   <AutocompleteSelect
                     optionsData={countries}
                     disable={isSaving}
-                    preselectedOptions={alertData?.selectedCountries || []}
+                    preselectedOptions={
+                      alertData?.selectedCountries || selectedCountries
+                    }
                     label="Target Countries"
                     placeholder="Search by country name"
                     error={errors.countries}
-                    onSelectChange={setSelectedCountries}
+                    onSelectChange={(selected) => {
+                      console.log(selected);
+                      setSelectedCountries((prev) => {
+                        const uniqueSelection = [
+                          ...new Set([...prev, ...selected]),
+                        ];
+                        return uniqueSelection;
+                      });
+                    }}
                   />
                 )}
               </BlockStack>

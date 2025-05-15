@@ -2,7 +2,7 @@ import { Button, Popover, ActionList } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 import { QuestionCircleIcon } from "@shopify/polaris-icons";
 export default function SupportPopover({
-  jiraUrl = "https://objectsws.atlassian.net/servicedesk/customer/portal/107",
+  jiraUrl = "https://objectsws.atlassian.net/servicedesk/customer/portal/41",
   whatsappUrl = "https://wa.me/+923242122924",
 }) {
   const [popoverActive, setPopoverActive] = useState(false);
