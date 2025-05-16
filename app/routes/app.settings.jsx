@@ -768,14 +768,14 @@ function AlertPopupSettingsPage() {
           <Section
             title="Branding Options"
             badge={true}
-            description=" Enable or remove the “Powered by Poppy” watermark from your pop-up."
+            description=" Enable or remove the “Powered by Objects watermark from your pop-up."
           >
             <Card>
               <BlockStack gap="400">
                 <Box>
                   <InlineStack align="space-between">
                     <Checkbox
-                      label=" Remove “Powered by Poppy” branding"
+                      label=" Remove “Powered by Objects branding"
                       checked={removeWatermark == "true"}
                       disabled={isSaving}
                       onChange={(checked) => {

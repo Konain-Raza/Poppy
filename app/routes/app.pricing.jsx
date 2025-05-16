@@ -75,7 +75,7 @@ export default function PricingPage() {
     {
       type: "pro",
       title: "Pro",
-      price: "$10",
+      price: "$3.99",
       duration: "/ Month",
 
       description: "Everything you need for growth",
@@ -84,7 +84,7 @@ export default function PricingPage() {
         "Maintenance Mode Notifications",
         "Exit-Intent Popups",
         "Priority Support",
-        "Remove the Watermark",
+        "Remove Watermark",
       ],
     },
   ];
@@ -102,7 +102,6 @@ export default function PricingPage() {
     plan?.appSubscriptions?.length > 0 &&
     plan.appSubscriptions[0]?.status === "ACTIVE" &&
     plan.appSubscriptions[0]?.name === "Pro Plan";
-
   return (
     <Page>
       <InlineStack align="center" blockAlign="center">
@@ -187,7 +186,7 @@ export default function PricingPage() {
                               )
                             }
                             disabled={
-                              (plan.type === "free" && !hasProPlan) || // Disable if Free Plan is already active
+                              (plan.type === "free") || // Disable if Free Plan is already active
                               (plan.type === "pro" && hasProPlan) ||
                               isLoading
                             }

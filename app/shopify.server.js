@@ -27,7 +27,7 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   billing: {
     [PRO_PLAN]: {
-      amount: 9.99,
+      amount: 3.99,
       currencyCode: "USD",
       test: true,
       interval: BillingInterval.Every30Days, // monthly subscription

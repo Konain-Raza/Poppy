@@ -8,7 +8,7 @@
       <button id="alertSecondaryBtn" class="secondary-btn">Cancel</button>
       <button id="alertPrimaryBtn" class="primary-btn">OK</button>
     </div>
-    <div id="watermark" class="watermark">Powered by Poppy</div>
+    <div id="watermark" class="watermark">Powered by <a id="watermark-link" target="_blank" href="https://apps.shopify.com/partners/objects7">Objects</a></div>
   </div>
 </div>
 
@@ -30,7 +30,7 @@
   });
 
   function handleShopifyAlertModals() {
-    console.log("🔄 Poppy is Running");
+    console.log("🔄 Popup and Disclaimer is Running");
     const billingMetaobject = {{ metaobjects['popup-and-disclaimer-billing'].values | json }};
     console.log(billingMetaobject);
       

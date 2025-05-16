@@ -27,7 +27,7 @@
     background: #ffffff;
     border: 1px solid #ddd;
     padding: 2.5rem;
-    border-radius: 16px;
+    border-radius: 12px;
     max-width: 500px;
     width: 90%;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
@@ -38,19 +38,20 @@
 }
 
 .alert-modal-content h2 {
-    margin-top: 0;
-    font-size: 26px;
+    margin: 0;
+    font-size: 24px;
     color: var(--title-text-color);
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
+    padding-block-end: 8px;
 }
 
 .alert-modal-content p {
     color: var(--description-text-color);
     font-size: 16px;
-    margin: 15px 0 25px;
+  padding-block-end: 24px;
+  margin: 0%;
     line-height: 1.5;
-    font-family: 'Roboto', sans-serif;
 }
 
 .alert-modal-actions {
@@ -64,7 +65,7 @@
 .alert-modal-actions button {
     padding: 12px 24px;
     border: none;
-    border-radius: 10px;
+    border-radius: 6px;
     font-weight: 600;
     font-size: 15px;
     cursor: pointer;
@@ -109,13 +110,8 @@
 }
 
 .watermark {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+ 
     font-size: 1.5rem;
-    pointer-events: none;
-    user-select: none;
     z-index: 9999;
 }
 
@@ -124,6 +120,5 @@
     max-width: 100%;
     height: auto;
     margin: 0 auto;
-    border-radius: 5px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
