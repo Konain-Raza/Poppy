@@ -143,13 +143,10 @@ export default function App() {
     setCollections(collections);
     setShop(shop);
     setPlan(plan);
-    console.log("App Plan", plan);
   }, [location]);
   const previewTheme = () => {
     const themeEditorId = themeId.split("/").pop();
-    const shopName = shop?.myshopifyDomain?.split('.')[0];
-    console.log(shop, shopName);
-    console.log(themeId);
+    const shopName = shop?.myshopifyDomain?.split(".")[0];
     const extensionId = "cb1cdc0a-09f6-4a9c-8882-92e8dc25e877";
     const extensionName = "poppy-popup";
     const editorUrl = `https://admin.shopify.com/store/${shopName}/themes/${themeEditorId}/editor?context=apps&template=index&activateAppId=${extensionId}/${extensionName}`;
@@ -168,7 +165,7 @@ export default function App() {
       <SupportPopover />
       <Box paddingBlockEnd={800} paddingBlockStart={800}>
         <InlineStack align="center" blockAlign="center">
-          <Text variant="bodyLg" >
+          <Text variant="bodyLg">
             For help or setup guidance, contact us at{" "}
             <Link>contact@objects.ws</Link>.
           </Text>

@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "80fbf6352378a2a38a09685dd9b33fb4"
-application_url = "https://elementary-sets-relative-viewpicture.trycloudflare.com"
+application_url = "https://disturbed-paperback-sites-glad.trycloudflare.com"
 embedded = true
 name = "Popup & Disclaimer"
 handle = "popup-and-disclaimer"
@@ -15,9 +15,9 @@ scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaob
 
 [auth]
 redirect_urls = [
-  "https://elementary-sets-relative-viewpicture.trycloudflare.com/auth/callback",
-  "https://elementary-sets-relative-viewpicture.trycloudflare.com/auth/shopify/callback",
-  "https://elementary-sets-relative-viewpicture.trycloudflare.com/api/auth/callback"
+  "https://disturbed-paperback-sites-glad.trycloudflare.com/auth/callback",
+  "https://disturbed-paperback-sites-glad.trycloudflare.com/auth/shopify/callback",
+  "https://disturbed-paperback-sites-glad.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

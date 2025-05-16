@@ -34,7 +34,6 @@ export const action = async ({ request }) => {
     console.log("✅ Pro plan selected, checking billing...");
     await billing.require({
       plans: [PRO_PLAN],
-      isTest: true,
       onFailure: async () => {
         console.log("⚡ Billing not active, requesting billing now...");
         return billing.request({

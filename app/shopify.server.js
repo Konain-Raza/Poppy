@@ -29,7 +29,6 @@ const shopify = shopifyApp({
     [PRO_PLAN]: {
       amount: 3.99,
       currencyCode: "USD",
-      test: true,
       interval: BillingInterval.Every30Days, // monthly subscription
     },
   },
