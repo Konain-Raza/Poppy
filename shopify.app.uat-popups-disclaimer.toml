@@ -1,15 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "7c1bf5b23e75d97f56b4e0281243a5eb"
-application_url = "https://cm-begins-vacation-informal.trycloudflare.com"
+application_url = "https://tears-lid-thee-conditions.trycloudflare.com"
 embedded = true
 name = "UAT Popups & Disclaimer"
 handle = "uat-popups-disclaimer"
-
-[build]
-include_config_on_deploy = true
-dev_store_url = "konain-raza.myshopify.com"
-automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2025-04"
@@ -20,10 +15,14 @@ scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaob
 
 [auth]
 redirect_urls = [
-  "https://cm-begins-vacation-informal.trycloudflare.com/auth/callback",
-  "https://cm-begins-vacation-informal.trycloudflare.com/auth/shopify/callback",
-  "https://cm-begins-vacation-informal.trycloudflare.com/api/auth/callback"
+  "https://tears-lid-thee-conditions.trycloudflare.com/auth/callback",
+  "https://tears-lid-thee-conditions.trycloudflare.com/auth/shopify/callback",
+  "https://tears-lid-thee-conditions.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
 embedded = false
+
+[build]
+dev_store_url = "konain-raza.myshopify.com"
+automatically_update_urls_on_dev = true

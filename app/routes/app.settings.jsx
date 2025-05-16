@@ -36,7 +36,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { admin, redirect } = await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
   let formData = await request.formData();
   const image = formData.get("image");
   console.log("Image", image);
@@ -72,13 +72,13 @@ export const action = async ({ request }) => {
     },
     {
       key: "primaryText",
-      value: payload.primaryText || "The feature is live and ready for use!",
+      value: payload.primaryText || "Agree!",
     },
     {
       key: "secondaryText",
       value:
         payload.secondaryText ||
-        "This feature will improve user experience by providing more flexibility.",
+        "Dismiss",
     },
     {
       key: "selectedProducts",
@@ -139,11 +139,11 @@ export const action = async ({ request }) => {
 
 function AlertPopupSettingsPage() {
   // Imports and Setup
-
   const navigate = useNavigate();
   const location = useLocation();
   const fetcher = useFetcher();
-  const { products, metaobjects, collections, plan } = useAppStore();
+  const { products, metaobjects, collections, plan, setProducts } =
+    useAppStore();
   const alertData = location.state?.alert;
 
   // Plan Values
@@ -155,7 +155,10 @@ function AlertPopupSettingsPage() {
     plan.appSubscriptions[0]?.name === "Pro Plan";
 
   const isCreatePopupDisabled = !hasProPlan && metaobjects?.length >= 2;
-
+  console.log("products", products);
+  useEffect(() => {
+    setProducts(products);
+  }, []);
   if (!products || !metaobjects) navigate("/app");
 
   // UI State
@@ -183,8 +186,8 @@ function AlertPopupSettingsPage() {
   const [countryRestriction, setCountryRestriction] = useState("disable");
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [scheduleStatus, setScheduleStatus] = useState("disable");
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)));
+  const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)));
   const [showPosition, setShowPosition] = useState("addToCart");
   const [userOnly, setUserOnly] = useState("disable");
   const [selectBy, setSelectBy] = useState("products");
@@ -220,7 +223,7 @@ function AlertPopupSettingsPage() {
       );
       navigate("/app");
     }
-  }, [alertData, isCreatePopupDisabled, navigate]);
+  }, [ isCreatePopupDisabled, navigate]);
 
   // useEffect – Populate fields from alert data
 
@@ -234,12 +237,35 @@ function AlertPopupSettingsPage() {
       setImage(alertData.image || null);
       setPrimaryText(alertData.primaryText || "");
       setSecondaryText(alertData.secondaryText || "");
-
       setCountryRestriction(alertData.countryRestriction || "disable");
       setSelectedCountries(alertData.selectedCountries || []);
       setScheduleStatus(alertData.scheduleStatus || "disable");
-      setStartDate(new Date(alertData.startDate) || new Date());
-      setEndDate(new Date(alertData.endDate) || new Date());
+      // Improved date handling
+    if (alertData.startDate) {
+      try {
+        // Create date object from ISO string and preserve the exact time
+        const parsedStartDate = new Date(alertData.startDate);
+        console.log("Parsed Start Date:", parsedStartDate.toISOString());
+        if (!isNaN(parsedStartDate.getTime())) {
+          setStartDate(parsedStartDate);
+        }
+      } catch (e) {
+        console.error("Error parsing start date:", e);
+      }
+    }
+    
+    if (alertData.endDate) {
+      try {
+        // Create date object from ISO string and preserve the exact time
+        const parsedEndDate = new Date(alertData.endDate);
+        console.log("Parsed End Date:", parsedEndDate.toISOString());
+        if (!isNaN(parsedEndDate.getTime())) {
+          setEndDate(parsedEndDate);
+        }
+      } catch (e) {
+        console.error("Error parsing end date:", e);
+      }
+    }
       setShowPosition(alertData.showPosition || "addToCart");
       setUserOnly(alertData.userOnly || "disable");
       setSelectBy(alertData.selectBy || "products");
@@ -247,7 +273,7 @@ function AlertPopupSettingsPage() {
       setSelectedCollections(alertData.selectedCollections || []);
       setSelectedProducts(alertData.selectedProducts || []);
     }
-  }, [alertData, navigate]);
+  }, [ navigate]);
 
   useEffect(() => {
     const allSelectedProductsRaw =
@@ -336,7 +362,7 @@ function AlertPopupSettingsPage() {
     setAllCollections(filteredCollections);
     setSelectedCollections(alertData?.selectedCollections);
     setSelectedProducts(alertData?.selectedProducts);
-  }, [navigate, alertData]);
+}, [products, metaobjects, alertData, collections]);
 
   // useEffect – Handle fetcher update
   useEffect(() => {
@@ -401,6 +427,12 @@ function AlertPopupSettingsPage() {
     });
   };
 
+  const formatDateWithOffset = (date, offsetDays = 0) => {
+  const adjustedDate = new Date(date);
+  adjustedDate.setDate(adjustedDate.getDate() + offsetDays);
+  return adjustedDate.toISOString().replace(/\.\d{3}Z$/, '');
+};
+
   // Handler – Pro Feature Access
 
   const handleProFeature = (callback) => {
@@ -415,7 +447,6 @@ function AlertPopupSettingsPage() {
   console.log("selectedCollections", selectedCollections);
 
   const handleSave = async () => {
-    const isUpdating = Boolean(alertData);
 
     let handleToUse;
 
@@ -506,8 +537,8 @@ function AlertPopupSettingsPage() {
         countryRestriction,
         selectedCountries,
         scheduleStatus,
-        startDate,
-        endDate,
+        startDate:formatDateWithOffset(startDate),
+        endDate: formatDateWithOffset(endDate),
         showPosition,
         selectedCollections,
         selectBy,
@@ -745,14 +776,12 @@ function AlertPopupSettingsPage() {
                   <InlineStack align="space-between">
                     <Checkbox
                       label=" Remove “Powered by Poppy” branding"
-                      checked={removeWatermark == 'true'}
+                      checked={removeWatermark == "true"}
                       disabled={isSaving}
                       onChange={(checked) => {
-                        if (!hasProPlan) {
-                          setShowUpgradeModal(true);
-                        } else {
-                          setRemoveWatermark(checked);
-                        }
+                        handleProFeature(() =>
+                          setRemoveWatermark(String(checked)),
+                        );
                       }}
                     />
                   </InlineStack>
@@ -847,12 +876,7 @@ function AlertPopupSettingsPage() {
                     error={errors.countries}
                     onSelectChange={(selected) => {
                       console.log(selected);
-                      setSelectedCountries((prev) => {
-                        const uniqueSelection = [
-                          ...new Set([...prev, ...selected]),
-                        ];
-                        return uniqueSelection;
-                      });
+                      setSelectedCountries(selected);
                     }}
                   />
                 )}

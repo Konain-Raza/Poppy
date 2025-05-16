@@ -9,29 +9,67 @@ import {
 } from "@shopify/polaris";
 import { CalendarIcon } from "@shopify/polaris-icons";
 
-const DatePickerSingle = ({ label, onDateChange, disableBefore }) => {
+const DatePickerSingle = ({
+  label,
+  selectedDate: propSelectedDate,
+  onDateChange,
+  disableBefore,
+}) => {
+  console.log("Disable ", disableBefore);
   const [visible, setVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(
+    propSelectedDate || new Date(),
+  );
   const [{ month, year }, setDate] = useState({
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
+    month: (propSelectedDate || new Date()).getMonth(),
+    year: (propSelectedDate || new Date()).getFullYear(),
   });
 
   const datePickerRef = useRef(null);
-  const formattedValue = selectedDate.toLocaleDateString("en-CA");
+  
+  const formatDateValue = (date) => {
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return localDate.toLocaleDateString("en-CA");
+  };
+  
+  const formattedValue = formatDateValue(selectedDate);
 
   const handleDateSelection = ({ end: newSelectedDate }) => {
-    setSelectedDate(newSelectedDate);
-    onDateChange?.(newSelectedDate);
+    const normalizedDate = new Date(
+      newSelectedDate.getFullYear(),
+      newSelectedDate.getMonth(),
+      newSelectedDate.getDate()
+    );
+    normalizedDate.setDate(normalizedDate.getDate() + 1);
+    
+    setSelectedDate(normalizedDate);
+    onDateChange?.(normalizedDate);
     setVisible(false);
   };
 
-  useEffect(() => {
+ useEffect(() => {
+  if (
+    propSelectedDate &&
+    propSelectedDate instanceof Date &&
+    !isNaN(propSelectedDate.getTime())
+  ) {
+    const normalizedDate = new Date(
+      propSelectedDate.getFullYear(),
+      propSelectedDate.getMonth(),
+      propSelectedDate.getDate()
+    );
+
+    // Subtract one day
+    normalizedDate.setDate(normalizedDate.getDate() - 1);
+
+    setSelectedDate(normalizedDate);
     setDate({
-      month: selectedDate.getMonth(),
-      year: selectedDate.getFullYear(),
+      month: normalizedDate.getMonth(),
+      year: normalizedDate.getFullYear(),
     });
-  }, [selectedDate]);
+  }
+}, [propSelectedDate]);
+
 
   return (
     <Box minWidth="100%">
@@ -63,7 +101,7 @@ const DatePickerSingle = ({ label, onDateChange, disableBefore }) => {
             selected={selectedDate}
             onMonthChange={(month, year) => setDate({ month, year })}
             onChange={handleDateSelection}
-            disableDatesBefore={disableBefore} // 🚫 Block earlier dates
+            disableDatesBefore={disableBefore}
           />
         </Card>
       </Popover>
